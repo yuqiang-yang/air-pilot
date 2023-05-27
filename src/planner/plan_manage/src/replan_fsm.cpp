@@ -1,7 +1,7 @@
 
 #include <plan_manage/ego_replan_fsm.h>
 
-namespace ego_planner
+namespace air_pilot
 {
 
   void EGOReplanFSM::init(ros::NodeHandle &nh)
@@ -38,8 +38,8 @@ namespace ego_planner
 
     odom_sub_ = nh.subscribe("/odom_world", 1, &EGOReplanFSM::odometryCallback, this);
 
-    bspline_pub_ = nh.advertise<ego_planner::Bspline>("/planning/bspline", 10);
-    data_disp_pub_ = nh.advertise<ego_planner::DataDisp>("/planning/data_display", 100);
+    bspline_pub_ = nh.advertise<air_pilot::Bspline>("/planning/bspline", 10);
+    data_disp_pub_ = nh.advertise<air_pilot::DataDisp>("/planning/data_display", 100);
 
     if (target_type_ == TARGET_TYPE::MANUAL_TARGET)
       waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &EGOReplanFSM::waypointCallback, this);
@@ -434,7 +434,7 @@ namespace ego_planner
       auto info = &planner_manager_->local_data_;
 
       /* publish traj */
-      ego_planner::Bspline bspline;
+      air_pilot::Bspline bspline;
       bspline.order = 3;
       bspline.start_time = info->start_time_;
       bspline.traj_id = info->traj_id_;
@@ -473,7 +473,7 @@ namespace ego_planner
     auto info = &planner_manager_->local_data_;
 
     /* publish traj */
-    ego_planner::Bspline bspline;
+    air_pilot::Bspline bspline;
     bspline.order = 3;
     bspline.start_time = info->start_time_;
     bspline.traj_id = info->traj_id_;
@@ -552,4 +552,4 @@ namespace ego_planner
     }
   }
 
-} // namespace ego_planner
+} // namespace air_pilot

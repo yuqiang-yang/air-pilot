@@ -2,7 +2,7 @@
 #include <plan_manage/planner_manager.h>
 #include <thread>
 
-namespace ego_planner
+namespace air_pilot
 {
 
   // SECTION interfaces for setup and query
@@ -481,4 +481,4 @@ namespace ego_planner
     UniformBspline::parameterizeToBspline(dt, point_set, start_end_derivative, ctrl_pts);
   }
 
-} // namespace ego_planner
+} // namespace air_pilot

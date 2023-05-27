@@ -10,7 +10,7 @@
 
 using std::vector;
 
-namespace ego_planner
+namespace air_pilot
 {
 
   class GlobalTrajData
@@ -214,6 +214,6 @@ namespace ego_planner
     UniformBspline position_traj_, velocity_traj_, acceleration_traj_;
   };
 
-} // namespace ego_planner
+} // namespace air_pilot
 
 #endif

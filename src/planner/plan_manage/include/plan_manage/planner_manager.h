@@ -5,13 +5,13 @@
 
 #include <bspline_opt/bspline_optimizer.h>
 #include <bspline_opt/uniform_bspline.h>
-#include <ego_planner/DataDisp.h>
+#include <air_pilot/DataDisp.h>
 #include <plan_env/grid_map.h>
 #include <plan_manage/plan_container.hpp>
 #include <ros/ros.h>
 #include <traj_utils/planning_visualization.h>
 
-namespace ego_planner
+namespace air_pilot
 {
 
   // Fast Planner Manager
@@ -66,6 +66,6 @@ namespace ego_planner
 
     // !SECTION
   };
-} // namespace ego_planner
+} // namespace air_pilot
 
 #endif

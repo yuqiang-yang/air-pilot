@@ -2,7 +2,7 @@
 #include "bspline_opt/gradient_descent_optimizer.h"
 // using namespace std;
 
-namespace ego_planner
+namespace air_pilot
 {
 
   void BsplineOptimizer::setParam(ros::NodeHandle &nh)
@@ -1090,4 +1090,4 @@ namespace ego_planner
     memcpy(grad, grad_3D.data() + 3 * order_, n * sizeof(grad[0]));
   }
 
-} // namespace ego_planner
+} // namespace air_pilot

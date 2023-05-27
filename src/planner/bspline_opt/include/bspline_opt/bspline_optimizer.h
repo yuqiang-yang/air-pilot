@@ -13,7 +13,7 @@
 // Input: a signed distance field and a sequence of points
 // Output: the optimized sequence of points
 // The format of points: N x 3 matrix, each row is a point
-namespace ego_planner
+namespace air_pilot
 {
 
   class ControlPoints
@@ -157,5 +157,5 @@ namespace ego_planner
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-} // namespace ego_planner
+} // namespace air_pilot
 #endif

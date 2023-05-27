@@ -3,11 +3,11 @@
 
 #include <plan_manage/ego_replan_fsm.h>
 
-using namespace ego_planner;
+using namespace air_pilot;
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "ego_planner_node");
+  ros::init(argc, argv, "air_pilot_node");
   ros::NodeHandle nh("~");
 
   EGOReplanFSM rebo_replan;

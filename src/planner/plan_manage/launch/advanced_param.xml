@@ -37,7 +37,7 @@
   <arg name="flight_type"/>
 
   <!-- main node -->
-  <node pkg="ego_planner" name="ego_planner_node" type="ego_planner_node" output="screen">
+  <node pkg="air_pilot" name="air_pilot_node" type="air_pilot_node" output="screen">
     <remap from="/odom_world" to="$(arg odometry_topic)"/>
     <remap from="/grid_map/odom" to="$(arg odometry_topic)"/>
     <remap from="/grid_map/cloud" to="$(arg cloud_topic)"/>

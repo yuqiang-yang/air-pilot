@@ -63,7 +63,7 @@ Visualization Manager:
       Displays:
         - Class: rviz/Marker
           Enabled: true
-          Marker Topic: /ego_planner_node/goal_point
+          Marker Topic: /air_pilot_node/goal_point
           Name: goal_point
           Namespaces:
             "": true
@@ -71,7 +71,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/Marker
           Enabled: false
-          Marker Topic: /ego_planner_node/global_list
+          Marker Topic: /air_pilot_node/global_list
           Name: global_path
           Namespaces:
             {}
@@ -79,7 +79,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/Marker
           Enabled: true
-          Marker Topic: /ego_planner_node/optimal_list
+          Marker Topic: /air_pilot_node/optimal_list
           Name: optimal_traj
           Namespaces:
             "": true
@@ -87,7 +87,7 @@ Visualization Manager:
           Value: true
         - Class: rviz/Marker
           Enabled: false
-          Marker Topic: /ego_planner_node/a_star_list
+          Marker Topic: /air_pilot_node/a_star_list
           Name: AStar
           Namespaces:
             {}
@@ -95,7 +95,7 @@ Visualization Manager:
           Value: false
         - Class: rviz/Marker
           Enabled: false
-          Marker Topic: /ego_planner_node/init_list
+          Marker Topic: /air_pilot_node/init_list
           Name: InitTraj
           Namespaces:
             {}

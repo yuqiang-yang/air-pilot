@@ -8,7 +8,7 @@
   <arg name="odom_topic" value="/visual_slam/odom" />
 
   <!-- main algorithm params -->
-  <include file="$(find ego_planner)/launch/advanced_param.xml">
+  <include file="$(find air_pilot)/launch/advanced_param.xml">
 
     <arg name="map_size_x_" value="$(arg map_size_x)"/>
     <arg name="map_size_y_" value="$(arg map_size_y)"/>
@@ -69,7 +69,7 @@
   </include>
 
   <!-- trajectory server -->
-  <node pkg="ego_planner" name="traj_server" type="traj_server" output="screen">
+  <node pkg="air_pilot" name="traj_server" type="traj_server" output="screen">
     <remap from="/position_cmd" to="planning/pos_cmd"/>
 
     <remap from="/odom_world" to="$(arg odom_topic)"/>
@@ -84,7 +84,7 @@
   </node>
 
   <!-- use simulator -->
-  <include file="$(find ego_planner)/launch/simulator.xml">
+  <include file="$(find air_pilot)/launch/simulator.xml">
     <arg name="map_size_x_" value="$(arg map_size_x)"/>
     <arg name="map_size_y_" value="$(arg map_size_y)"/>
     <arg name="map_size_z_" value="$(arg map_size_z)"/>

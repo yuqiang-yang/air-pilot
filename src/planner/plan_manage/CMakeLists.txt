@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ego_planner)
+project(air_pilot)
 
 set(CMAKE_BUILD_TYPE "Release")
 ADD_COMPILE_OPTIONS(-std=c++11 )
@@ -39,7 +39,7 @@ generate_messages(
 # catkin_package(CATKIN_DEPENDS message_runtime)
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES ego_planner
+ LIBRARIES air_pilot
  CATKIN_DEPENDS plan_env path_searching bspline_opt traj_utils message_runtime
 #  DEPENDS system_lib
 )
@@ -53,15 +53,15 @@ include_directories(
 )
 
 
-add_executable(ego_planner_node
-  src/ego_planner_node.cpp 
-  src/ego_replan_fsm.cpp
+add_executable(air_pilot_node
+  src/air_pilot_node.cpp 
+  src/replan_fsm.cpp
   src/planner_manager.cpp
   )
-target_link_libraries(ego_planner_node 
+target_link_libraries(air_pilot_node 
   ${catkin_LIBRARIES}
   )
-add_dependencies(ego_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(air_pilot_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(traj_server src/traj_server.cpp)
 target_link_libraries(traj_server ${catkin_LIBRARIES})

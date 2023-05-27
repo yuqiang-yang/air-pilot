@@ -1,6 +1,6 @@
 #include "bspline_opt/uniform_bspline.h"
 #include "nav_msgs/Odometry.h"
-#include "ego_planner/Bspline.h"
+#include "air_pilot/Bspline.h"
 #include "quadrotor_msgs/PositionCommand.h"
 #include "std_msgs/Empty.h"
 #include "visualization_msgs/Marker.h"
@@ -12,7 +12,7 @@ quadrotor_msgs::PositionCommand cmd;
 double pos_gain[3] = {0, 0, 0};
 double vel_gain[3] = {0, 0, 0};
 
-using ego_planner::UniformBspline;
+using air_pilot::UniformBspline;
 
 bool receive_traj_ = false;
 vector<UniformBspline> traj_;
@@ -24,7 +24,7 @@ int traj_id_;
 double last_yaw_, last_yaw_dot_;
 double time_forward_;
 
-void bsplineCallback(ego_planner::BsplineConstPtr msg)
+void bsplineCallback(air_pilot::BsplineConstPtr msg)
 {
   // parse pos traj
 

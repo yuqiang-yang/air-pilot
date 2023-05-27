@@ -13,14 +13,14 @@
 
 #include <bspline_opt/bspline_optimizer.h>
 #include <plan_env/grid_map.h>
-#include <ego_planner/Bspline.h>
-#include <ego_planner/DataDisp.h>
+#include <air_pilot/Bspline.h>
+#include <air_pilot/DataDisp.h>
 #include <plan_manage/planner_manager.h>
 #include <traj_utils/planning_visualization.h>
 
 using std::vector;
 
-namespace ego_planner
+namespace air_pilot
 {
 
   class EGOReplanFSM
@@ -47,7 +47,7 @@ namespace ego_planner
     /* planning utils */
     EGOPlannerManager::Ptr planner_manager_;
     PlanningVisualization::Ptr visualization_;
-    ego_planner::DataDisp data_disp_;
+    air_pilot::DataDisp data_disp_;
 
     /* parameters */
     int target_type_; // 1 mannual select, 2 hard code
@@ -112,6 +112,6 @@ namespace ego_planner
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 
-} // namespace ego_planner
+} // namespace air_pilot
 
 #endif
