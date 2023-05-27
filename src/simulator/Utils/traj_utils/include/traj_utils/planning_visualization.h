@@ -3,7 +3,7 @@
 
 #include <Eigen/Eigen>
 #include <algorithm>
-#include <bspline_opt/uniform_bspline.h>
+#include <bspline_opt/UniformBspline.h>
 #include <iostream>
 #include <traj_utils/polynomial_traj.h>
 #include <ros/ros.h>

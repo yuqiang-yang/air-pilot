@@ -35,8 +35,9 @@ include_directories(
 )
 
 add_library( bspline_opt 
-    src/uniform_bspline.cpp 
-    src/bspline_optimizer.cpp 
+    src/UniformBspline.cpp 
+    src/BsplineOptimizer.cpp 
+    src/CostFunction.cpp
     )
 target_link_libraries( bspline_opt
     ${catkin_LIBRARIES} 

@@ -1,4 +1,4 @@
-#include "bspline_opt/uniform_bspline.h"
+#include "bspline_opt/UniformBspline.h"
 #include <ros/ros.h>
 
 namespace air_pilot

@@ -13,6 +13,8 @@ A lite-version motion planning project for multicopter.
 ## planning
 删掉gradient decent optimizer.cpp
 修改fsm中的初始轨迹生成
+封装Control point类
+删除了多余的optimize函数，变量等
 ## control 
 
 Simulator部分不修改

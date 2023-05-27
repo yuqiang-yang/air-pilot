@@ -1,4 +1,4 @@
-#include "bspline_opt/uniform_bspline.h"
+#include "bspline_opt/UniformBspline.h"
 #include "nav_msgs/Odometry.h"
 #include "air_pilot/Bspline.h"
 #include "quadrotor_msgs/PositionCommand.h"

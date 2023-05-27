@@ -11,7 +11,7 @@
 #include <vector>
 #include <visualization_msgs/Marker.h>
 
-#include <bspline_opt/bspline_optimizer.h>
+#include <bspline_opt/BsplineOptimizer.h>
 #include <plan_env/grid_map.h>
 #include <air_pilot/Bspline.h>
 #include <air_pilot/DataDisp.h>

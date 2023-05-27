@@ -3,8 +3,8 @@
 
 #include <stdlib.h>
 
-#include <bspline_opt/bspline_optimizer.h>
-#include <bspline_opt/uniform_bspline.h>
+#include <bspline_opt/BsplineOptimizer.h>
+#include <bspline_opt/UniformBspline.h>
 #include <air_pilot/DataDisp.h>
 #include <plan_env/grid_map.h>
 #include <plan_manage/plan_container.hpp>
