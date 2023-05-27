@@ -9,7 +9,7 @@ AStar::~AStar()
         for (int j = 0; j < POOL_SIZE_(1); j++)
             for (int k = 0; k < POOL_SIZE_(2); k++)
                 delete GridNodeMap_[i][j][k];
-}
+} 
 
 void AStar::initGridMap(GridMap::Ptr occ_map, const Eigen::Vector3i pool_size)
 {
