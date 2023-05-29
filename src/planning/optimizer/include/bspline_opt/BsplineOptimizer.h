@@ -4,7 +4,7 @@
 #include <Eigen/Eigen>
 #include <path_searching/AStar.h>
 #include <bspline_opt/UniformBspline.h>
-#include <plan_env/grid_map.h>
+#include <plan_env/GridMap.h>
 #include <ros/ros.h>
 #include "bspline_opt/lbfgs.hpp"
 #include "ControlPoints.h"

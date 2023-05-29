@@ -22,115 +22,13 @@
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/time_synchronizer.h>
 
-#include <plan_env/raycast.h>
+#include <plan_env/RayCaster.h>
+#include <plan_env/MappingData.h>
+#include <plan_env/MappingParameters.h>
 
 #define logit(x) (log((x) / (1 - (x))))
 
 using namespace std;
-
-// voxel hashing
-template <typename T>
-struct matrix_hash : std::unary_function<T, size_t> {
-  std::size_t operator()(T const& matrix) const {
-    size_t seed = 0;
-    for (size_t i = 0; i < matrix.size(); ++i) {
-      auto elem = *(matrix.data() + i);
-      seed ^= std::hash<typename T::Scalar>()(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-    return seed;
-  }
-};
-
-// constant parameters
-
-struct MappingParameters {
-
-  /* map properties */
-  Eigen::Vector3d map_origin_, map_size_;
-  Eigen::Vector3d map_min_boundary_, map_max_boundary_;  // map range in pos
-  Eigen::Vector3i map_voxel_num_;                        // map range in index
-  Eigen::Vector3d local_update_range_;
-  double resolution_, resolution_inv_;
-  double obstacles_inflation_;
-  string frame_id_;
-  int pose_type_;
-
-  /* camera parameters */
-  double cx_, cy_, fx_, fy_;
-
-  /* depth image projection filtering */
-  double depth_filter_maxdist_, depth_filter_mindist_, depth_filter_tolerance_;
-  int depth_filter_margin_;
-  bool use_depth_filter_;
-  double k_depth_scaling_factor_;
-  int skip_pixel_;
-
-  /* raycasting */
-  double p_hit_, p_miss_, p_min_, p_max_, p_occ_;  // occupancy probability
-  double prob_hit_log_, prob_miss_log_, clamp_min_log_, clamp_max_log_,
-      min_occupancy_log_;                   // logit of occupancy probability
-  double min_ray_length_, max_ray_length_;  // range of doing raycasting
-
-  /* local map update and clear */
-  int local_map_margin_;
-
-  /* visualization and computation time display */
-  double visualization_truncate_height_, virtual_ceil_height_, ground_height_;
-  bool show_occ_time_;
-
-  /* active mapping */
-  double unknown_flag_;
-};
-
-// intermediate mapping data for fusion
-
-struct MappingData {
-  // main map data, occupancy of each voxel and Euclidean distance
-
-  std::vector<double> occupancy_buffer_;
-  std::vector<char> occupancy_buffer_inflate_;
-
-  // camera position and pose data
-
-  Eigen::Vector3d camera_pos_, last_camera_pos_;
-  Eigen::Quaterniond camera_q_, last_camera_q_;
-
-  // depth image data
-
-  cv::Mat depth_image_, last_depth_image_;
-  int image_cnt_;
-
-  Eigen::Matrix4d cam2body_;
-
-  // flags of map state
-
-  bool occ_need_update_, local_updated_;
-  bool has_first_depth_;
-  bool has_odom_, has_cloud_;
-
-  // depth image projected point cloud
-
-  vector<Eigen::Vector3d> proj_points_;
-  int proj_points_cnt;
-
-  // flag buffers for speeding up raycasting
-
-  vector<short> count_hit_, count_hit_and_miss_;
-  vector<char> flag_traverse_, flag_rayend_;
-  char raycast_num_;
-  queue<Eigen::Vector3i> cache_voxel_;
-
-  // range of updating grid
-
-  Eigen::Vector3i local_bound_min_, local_bound_max_;
-
-  // computation time
-
-  double fuse_time_, max_fuse_time_;
-  int update_num_;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
 
 class GridMap {
 public:
@@ -205,10 +103,7 @@ private:
   int setCacheOccupancy(Eigen::Vector3d pos, int occ);
   Eigen::Vector3d closetPointInMap(const Eigen::Vector3d& pt, const Eigen::Vector3d& camera_pt);
 
-  // typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image,
-  // nav_msgs::Odometry> SyncPolicyImageOdom; typedef
-  // message_filters::sync_policies::ExactTime<sensor_msgs::Image,
-  // geometry_msgs::PoseStamped> SyncPolicyImagePose;
+
   typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, nav_msgs::Odometry>
       SyncPolicyImageOdom;
   typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, geometry_msgs::PoseStamped>

@@ -40,8 +40,8 @@ include_directories(
 link_directories(${PCL_LIBRARY_DIRS})
 
 add_library( plan_env 
-    src/grid_map.cpp 
-    src/raycast.cpp
+    src/GridMap.cpp 
+    src/RayCaster.cpp
     )
 target_link_libraries( plan_env
     ${catkin_LIBRARIES} 
