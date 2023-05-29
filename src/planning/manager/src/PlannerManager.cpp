@@ -43,7 +43,7 @@ namespace air_pilot
 
     static int count = 0;
     std::cout << endl
-              << "[rebo replan]: -------------------------------------" << count++ << std::endl;
+              << "[replan]: -------------------------------------" << count++ << std::endl;
     cout.precision(3);
     cout << "start: " << start_pt.transpose() << ", " << start_vel.transpose() << "\ngoal:" << local_target_pt.transpose() << ", " << local_target_vel.transpose()
          << endl;
