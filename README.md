@@ -24,3 +24,5 @@ A lite-version motion planning project for multicopter.
 Simulator部分不修改
 
 改成了yaml文件
+
+添加一致性检验

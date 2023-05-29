@@ -18,7 +18,9 @@ namespace air_pilot
     nh.param("fsm/planning_horizon", planning_horizen_, -1.0);
     nh.param("fsm/planning_horizen_time", planning_horizen_time_, -1.0);
     nh.param("fsm/emergency_time_", emergency_time_, 1.0);
+    nh.param("fsm/consistancy_check_flag", consistancy_check_flag_, false);
 
+    
     nh.param("fsm/waypoint_num", waypoint_num_, -1);
     for (int i = 0; i < waypoint_num_; i++)
     {
@@ -261,7 +263,10 @@ namespace air_pilot
 
     case REPLAN_TRAJ:
     {
-      if (iterativeReplan())
+      auto success = iterativeReplan();
+      if(consistancy_check_flag_)
+        success &= checkConsistancy();
+      if (success)
       {
         FSMStateTransition(EXEC_TRAJ, "FSM");
       }
@@ -539,4 +544,37 @@ namespace air_pilot
     }
   }
 
+
+bool ReplanFSM::checkConsistancy()
+{
+    LocalTrajData *info = &pm_->local_data_;
+    LocalTrajData *last_info = &pm_->last_local_data_;
+
+    auto map = pm_->grid_map_;
+
+    if (exec_state_ == WAIT_TARGET || info->start_time_.toSec() < 1e-5)
+      return true;
+
+    /* ---------- check trajectory ---------- */
+    constexpr double time_step = 0.05;
+    double t_cur = (ros::Time::now() - info->start_time_).toSec();
+    double t_2_3 = info->duration_ * 2 / 3;
+    for (double t = t_cur; t < info->duration_; t += time_step)
+    {
+      if (t_cur < t_2_3 && t >= t_2_3) // If t_cur < t_2_3, only the first 2/3 partition of the trajectory is considered valid and will get checked.
+        break;
+      auto start = info->position_traj_.evaluateDeBoorT(t);
+      auto end = last_info->position_traj_.evaluateDeBoorT(t);
+      for(double k = 0; k < 1.0;k+=0.01)
+      {
+        auto p_inner = start*k + end*(1-k);
+        if(map->getInflateOccupancy(p_inner))
+        {
+          return false;
+        }
+      }
+
+    }
+    return true;
+}
 } // namespace air_pilot

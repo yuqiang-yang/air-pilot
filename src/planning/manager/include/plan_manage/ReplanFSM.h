@@ -72,7 +72,8 @@ namespace air_pilot
 
     bool flag_escape_emergency_;
 
-    /* ROS utils */
+    bool consistancy_check_flag_ = false;
+    /* ROS utils */ 
     ros::NodeHandle node_;
     ros::Timer exec_timer_, safety_timer_;
     ros::Subscriber waypoint_sub_, odom_sub_;
@@ -97,6 +98,7 @@ namespace air_pilot
     void targetCb(const nav_msgs::PathConstPtr &msg);
     void odomCb(const nav_msgs::OdometryConstPtr &msg);
 
+    bool checkConsistancy();
     bool checkCollision();
 
   public:

@@ -35,6 +35,8 @@ namespace air_pilot
 
     PlanParameters pp_;
     LocalTrajData local_data_;
+    LocalTrajData last_local_data_;
+
     GlobalTrajData global_data_;
     GridMap::Ptr grid_map_;
 

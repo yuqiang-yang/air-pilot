@@ -443,6 +443,7 @@ namespace air_pilot
 
   void PlannerManager::updateManagerVariable(const UniformBspline &position_traj, const ros::Time time_now)
   {
+    last_local_data_ = local_data_;
     local_data_.start_time_ = time_now;
     local_data_.position_traj_ = position_traj;
     local_data_.velocity_traj_ = local_data_.position_traj_.getDerivative();
@@ -450,6 +451,8 @@ namespace air_pilot
     local_data_.start_pos_ = local_data_.position_traj_.evaluateDeBoorT(0.0);
     local_data_.duration_ = local_data_.position_traj_.getTimeSum();
     local_data_.traj_id_ += 1;
+    
+    
   }
 
   void PlannerManager::reparamBspline(UniformBspline &bspline, vector<Eigen::Vector3d> &start_end_derivative, double ratio,
