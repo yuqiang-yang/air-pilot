@@ -2,7 +2,7 @@
 #define _BSPLINE_OPTIMIZER_H_
 
 #include <Eigen/Eigen>
-#include <path_searching/dyn_a_star.h>
+#include <path_searching/AStar.h>
 #include <bspline_opt/UniformBspline.h>
 #include <plan_env/grid_map.h>
 #include <ros/ros.h>
