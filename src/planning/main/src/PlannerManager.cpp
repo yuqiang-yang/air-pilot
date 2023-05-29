@@ -1,5 +1,5 @@
 // #include <fstream>
-#include <plan_manage/planner_manager.h>
+#include <plan_manage/PlannerManager.h>
 #include <thread>
 
 namespace air_pilot
@@ -7,11 +7,11 @@ namespace air_pilot
 
   // SECTION interfaces for setup and query
 
-  EGOPlannerManager::EGOPlannerManager() {}
+  PlannerManager::PlannerManager() {}
 
-  EGOPlannerManager::~EGOPlannerManager() { std::cout << "des manager" << std::endl; }
+  PlannerManager::~PlannerManager() { std::cout << "des manager" << std::endl; }
 
-  void EGOPlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
+  void PlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
   {
     /* read algorithm parameters */
 
@@ -39,7 +39,7 @@ namespace air_pilot
 
   // SECTION rebond replanning
 
-  bool EGOPlannerManager::reboundReplan(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel,
+  bool PlannerManager::reboundReplan(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel,
                                         Eigen::Vector3d start_acc, Eigen::Vector3d local_target_pt,
                                         Eigen::Vector3d local_target_vel, bool flag_polyInit, bool flag_randomPolyTraj)
   {
@@ -271,7 +271,7 @@ namespace air_pilot
     return true;
   }
 
-  bool EGOPlannerManager::EmergencyStop(Eigen::Vector3d stop_pos)
+  bool PlannerManager::EmergencyStop(Eigen::Vector3d stop_pos)
   {
     Eigen::MatrixXd control_points(3, 6);
     for (int i = 0; i < 6; i++)
@@ -284,7 +284,7 @@ namespace air_pilot
     return true;
   }
 
-  bool EGOPlannerManager::planGlobalTrajWaypoints(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
+  bool PlannerManager::planGlobalTrajWaypoints(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
                                                   const std::vector<Eigen::Vector3d> &waypoints, const Eigen::Vector3d &end_vel, const Eigen::Vector3d &end_acc)
   {
 
@@ -364,7 +364,7 @@ namespace air_pilot
     return true;
   }
 
-  bool EGOPlannerManager::planGlobalTraj(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
+  bool PlannerManager::planGlobalTraj(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
                                          const Eigen::Vector3d &end_pos, const Eigen::Vector3d &end_vel, const Eigen::Vector3d &end_acc)
   {
 
@@ -428,7 +428,7 @@ namespace air_pilot
     return true;
   }
 
-  bool EGOPlannerManager::refineTrajAlgo(UniformBspline &traj, vector<Eigen::Vector3d> &start_end_derivative, double ratio, double &ts, Eigen::MatrixXd &optimal_control_points)
+  bool PlannerManager::refineTrajAlgo(UniformBspline &traj, vector<Eigen::Vector3d> &start_end_derivative, double ratio, double &ts, Eigen::MatrixXd &optimal_control_points)
   {
     double t_inc;
 
@@ -449,7 +449,7 @@ namespace air_pilot
     return success;
   }
 
-  void EGOPlannerManager::updateTrajInfo(const UniformBspline &position_traj, const ros::Time time_now)
+  void PlannerManager::updateTrajInfo(const UniformBspline &position_traj, const ros::Time time_now)
   {
     local_data_.start_time_ = time_now;
     local_data_.position_traj_ = position_traj;
@@ -460,7 +460,7 @@ namespace air_pilot
     local_data_.traj_id_ += 1;
   }
 
-  void EGOPlannerManager::reparamBspline(UniformBspline &bspline, vector<Eigen::Vector3d> &start_end_derivative, double ratio,
+  void PlannerManager::reparamBspline(UniformBspline &bspline, vector<Eigen::Vector3d> &start_end_derivative, double ratio,
                                          Eigen::MatrixXd &ctrl_pts, double &dt, double &time_inc)
   {
     double time_origin = bspline.getTimeSum();

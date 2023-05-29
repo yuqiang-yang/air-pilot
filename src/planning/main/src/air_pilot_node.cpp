@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
 
-#include <plan_manage/ego_replan_fsm.h>
+#include <plan_manage/ReplanFSM.h>
 
 using namespace air_pilot;
 
@@ -10,7 +10,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "air_pilot_node");
   ros::NodeHandle nh("~");
 
-  EGOReplanFSM rebo_replan;
+  ReplanFSM rebo_replan;
 
   rebo_replan.init(nh);
 

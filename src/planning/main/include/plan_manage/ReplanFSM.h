@@ -15,7 +15,7 @@
 #include <plan_env/grid_map.h>
 #include <air_pilot/Bspline.h>
 #include <air_pilot/DataDisp.h>
-#include <plan_manage/planner_manager.h>
+#include <plan_manage/PlannerManager.h>
 #include <traj_utils/planning_visualization.h>
 
 using std::vector;
@@ -23,7 +23,7 @@ using std::vector;
 namespace air_pilot
 {
 
-  class EGOReplanFSM
+  class ReplanFSM
   {
 
   private:
@@ -45,7 +45,7 @@ namespace air_pilot
     };
 
     /* planning utils */
-    EGOPlannerManager::Ptr planner_manager_;
+    PlannerManager::Ptr pm_;
     PlanningVisualization::Ptr visualization_;
     air_pilot::DataDisp data_disp_;
 
@@ -85,7 +85,7 @@ namespace air_pilot
 
     /* return value: std::pair< Times of the same state be continuously called, current continuously called state > */
     void changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call);
-    std::pair<int, EGOReplanFSM::FSM_EXEC_STATE> timesOfConsecutiveStateCalls();
+    std::pair<int, ReplanFSM::FSM_EXEC_STATE> timesOfConsecutiveStateCalls();
     void printFSMExecState();
 
     void planGlobalTrajbyGivenWps();
@@ -100,10 +100,10 @@ namespace air_pilot
     bool checkCollision();
 
   public:
-    EGOReplanFSM(/* args */)
+    ReplanFSM(/* args */)
     {
     }
-    ~EGOReplanFSM()
+    ~ReplanFSM()
     {
     }
 

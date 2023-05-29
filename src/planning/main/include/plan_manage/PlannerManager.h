@@ -7,7 +7,7 @@
 #include <bspline_opt/UniformBspline.h>
 #include <air_pilot/DataDisp.h>
 #include <plan_env/grid_map.h>
-#include <plan_manage/plan_container.hpp>
+#include <plan_manage/PlannerData.hpp>
 #include <ros/ros.h>
 #include <traj_utils/planning_visualization.h>
 
@@ -17,12 +17,12 @@ namespace air_pilot
   // Fast Planner Manager
   // Key algorithms of mapping and planning are called
 
-  class EGOPlannerManager
+  class PlannerManager
   {
     // SECTION stable
   public:
-    EGOPlannerManager();
-    ~EGOPlannerManager();
+    PlannerManager();
+    ~PlannerManager();
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
@@ -62,7 +62,7 @@ namespace air_pilot
     // SECTION developing
 
   public:
-    typedef unique_ptr<EGOPlannerManager> Ptr;
+    typedef unique_ptr<PlannerManager> Ptr;
 
     // !SECTION
   };

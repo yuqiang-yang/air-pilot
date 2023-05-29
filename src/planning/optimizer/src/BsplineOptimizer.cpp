@@ -31,9 +31,6 @@ namespace air_pilot
 
   void BsplineOptimizer::setBsplineInterval(const double &ts) { bspline_interval_ = ts; cost_.bspline_interval_ = ts;}
 
-  /* This function is very similar to check_collision_and_rebound(). 
-   * It was written separately, just because I did it once and it has been running stably since March 2020.
-   * But I will merge then someday.*/
   std::vector<std::vector<Eigen::Vector3d>> BsplineOptimizer::initControlPoints(Eigen::MatrixXd &init_points, bool flag_first_init /*= true*/)
   {
 

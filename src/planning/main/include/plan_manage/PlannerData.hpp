@@ -1,5 +1,5 @@
-#ifndef _PLAN_CONTAINER_H_
-#define _PLAN_CONTAINER_H_
+#ifndef _PLAN_DATA_H_
+#define _PLAN_DATA_H_
 
 #include <Eigen/Eigen>
 #include <vector>

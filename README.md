@@ -15,6 +15,7 @@ A lite-version motion planning project for multicopter.
 修改fsm中的初始轨迹生成
 封装Control point类
 删除了多余的optimize函数，变量等
+修改了许多类的名字
 ## control 
 
 Simulator部分不修改

@@ -55,8 +55,8 @@ include_directories(
 
 add_executable(air_pilot_node
   src/air_pilot_node.cpp 
-  src/replan_fsm.cpp
-  src/planner_manager.cpp
+  src/ReplanFSM.cpp
+  src/PlannerManager.cpp
   )
 target_link_libraries(air_pilot_node 
   ${catkin_LIBRARIES}
