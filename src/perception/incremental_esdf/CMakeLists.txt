@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(fiesta)
+project(incremental_esdf)
 ADD_COMPILE_OPTIONS(-std=c++17 )
 find_package(catkin REQUIRED COMPONENTS
         roscpp

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>fiesta</name>
+  <name>incremental_esdf</name>
   <version>0.0.1</version>
   <description> ESDF Tools </description>
   <maintainer email="todo@123.com">huawei</maintainer>

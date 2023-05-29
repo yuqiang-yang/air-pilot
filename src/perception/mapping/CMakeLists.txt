@@ -42,6 +42,7 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_library( mapping 
     src/GridMap.cpp 
     src/RayCaster.cpp
+    src/RingBufferGridMap.cpp
     )
 target_link_libraries( mapping
     ${catkin_LIBRARIES} 

@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <bspline_opt/UniformBspline.h>
 #include <iostream>
-#include <traj_utils/polynomial_traj.h>
+#include <minimumSnapTrajGen/polynomial_traj.h>
 #include <ros/ros.h>
 #include <vector>
 #include <visualization_msgs/Marker.h>

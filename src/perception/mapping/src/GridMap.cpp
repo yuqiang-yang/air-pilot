@@ -54,6 +54,7 @@ void GridMap::initMap(ros::NodeHandle &nh)
   node_.param("grid_map/visualize_flag", visualize_flag_, true);
   node_.param("grid_map/esdf_flag", esdf_flag_, false);
   node_.param("grid_map/mapping_frequency", mapping_frequency_, 20.0);
+  node_.param("grid_map/ring_buffer_flag", ring_buffer_flag_, false);
 
 
   bool raycast_flag_ = true;
@@ -649,6 +650,11 @@ void GridMap::visualizationCb(const ros::TimerEvent & /*event*/)
 
 void GridMap::updateGridMapCb(const ros::TimerEvent & /*event*/)
 {
+  if(ring_buffer_flag_)
+  {
+    ringBufferMap_.updateMap(md_.camera_pos_,md_.proj_points_);
+    return;
+  }
   if (!md_.occ_need_update_)
     return;
   /* update occupancy */

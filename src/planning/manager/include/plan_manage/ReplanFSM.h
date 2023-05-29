@@ -16,7 +16,7 @@
 #include <air_pilot/Bspline.h>
 #include <air_pilot/DataDisp.h>
 #include <plan_manage/PlannerManager.h>
-#include <traj_utils/planning_visualization.h>
+#include <minimumSnapTrajGen/planning_visualization.h>
 
 using std::vector;
 

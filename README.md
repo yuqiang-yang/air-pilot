@@ -9,15 +9,18 @@ A lite-version motion planning project for multicopter.
 - package.xml
 
 ## perception
-删除不必要的函数和判断
-增加统计的参数
-
+删除许多不必要的函数和判断
+增加统计的参数和一些标志位
+添加了ESDF部分
 ## planning
 删掉gradient decent optimizer.cpp
 修改fsm中的初始轨迹生成
 封装Control point类
 删除了多余的optimize函数，变量等
 修改了许多类的名字
+封装了Cost 类
 ## control 
-
+不做修改
 Simulator部分不修改
+
+改成了yaml文件

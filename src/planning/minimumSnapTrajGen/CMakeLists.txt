@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(traj_utils)
+project(minimumSnapTrajGen)
 
 set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_FLAGS "-std=c++11")
@@ -18,7 +18,7 @@ find_package(PCL 1.7 REQUIRED)
 
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES traj_utils
+ LIBRARIES minimumSnapTrajGen
  CATKIN_DEPENDS path_searching bspline_opt
 #  DEPENDS system_lib
 )
@@ -33,10 +33,10 @@ include_directories(
 
 link_directories(${PCL_LIBRARY_DIRS})
 
-add_library( traj_utils
+add_library( minimumSnapTrajGen
     src/planning_visualization.cpp 
     src/polynomial_traj.cpp 
     )
-target_link_libraries( traj_utils
+target_link_libraries( minimumSnapTrajGen
     ${catkin_LIBRARIES} 
     )  

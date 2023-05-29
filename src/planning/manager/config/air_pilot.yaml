@@ -62,7 +62,7 @@ grid_map:
   esdf_flag: false
   mapping_frequency: 20.0
   esdf_slice_height: 0.5
-
+  ring_buffer_flag_:  false
 
 
 manager:

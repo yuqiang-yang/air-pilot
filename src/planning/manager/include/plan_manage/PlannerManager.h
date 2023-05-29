@@ -9,7 +9,7 @@
 #include <mapping/GridMap.h>
 #include <plan_manage/PlannerData.hpp>
 #include <ros/ros.h>
-#include <traj_utils/planning_visualization.h>
+#include <minimumSnapTrajGen/planning_visualization.h>
 
 namespace air_pilot
 {

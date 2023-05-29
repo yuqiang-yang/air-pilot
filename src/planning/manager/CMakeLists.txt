@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   mapping
   path_searching
   bspline_opt
-  traj_utils
+  minimumSnapTrajGen
   message_generation
   cv_bridge
 )
@@ -40,7 +40,7 @@ generate_messages(
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES air_pilot
- CATKIN_DEPENDS mapping path_searching bspline_opt traj_utils message_runtime
+ CATKIN_DEPENDS mapping path_searching bspline_opt minimumSnapTrajGen message_runtime
 #  DEPENDS system_lib
 )
 
@@ -63,8 +63,8 @@ target_link_libraries(air_pilot_node
   )
 add_dependencies(air_pilot_node ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-add_executable(traj_server src/traj_server.cpp)
-target_link_libraries(traj_server ${catkin_LIBRARIES})
-add_dependencies(traj_server ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_executable(trajectory_publisher src/trajectory_publisher.cpp)
+target_link_libraries(trajectory_publisher ${catkin_LIBRARIES})
+add_dependencies(trajectory_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 

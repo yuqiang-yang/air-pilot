@@ -36,7 +36,7 @@ void CostFunction::calcDistanceCostRebound(const Eigen::MatrixXd &q, double &cos
     }
   }
 
-  void CostFunction::calcFitnessCost(const Eigen::MatrixXd &q, double &cost, Eigen::MatrixXd &gradient)
+void CostFunction::calcFitnessCost(const Eigen::MatrixXd &q, double &cost, Eigen::MatrixXd &gradient)
   {
 
     cost = 0.0;

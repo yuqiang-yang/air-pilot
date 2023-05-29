@@ -1,4 +1,4 @@
-#include <traj_utils/planning_visualization.h>
+#include <minimumSnapTrajGen/planning_visualization.h>
 
 using std::cout;
 using std::endl;

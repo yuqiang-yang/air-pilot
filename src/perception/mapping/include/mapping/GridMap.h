@@ -25,7 +25,7 @@
 #include <mapping/RayCaster.h>
 #include <mapping/MappingData.h>
 #include <mapping/MappingParameters.h>
-
+#include <mapping/RingBufferGridMap.h>
 #define logit(x) (log((x) / (1 - (x))))
 
 using namespace std;
@@ -74,7 +74,7 @@ public:
   inline double getResolution();
 
   typedef std::shared_ptr<GridMap> Ptr;
-
+  RingBufferGridMap ringBufferMap_;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
@@ -85,6 +85,7 @@ private:
   bool project_flag_ = true;
   bool visualize_flag_ = true;
   bool esdf_flag_ = false;
+  bool ring_buffer_flag_ = false;
   double mapping_frequency_ = 20.0;
 
   // get depth image and camera pose

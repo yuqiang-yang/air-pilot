@@ -223,7 +223,7 @@ void cmdCallback(const ros::TimerEvent &e)
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "traj_server");
+  ros::init(argc, argv, "trajectory_publisher");
   ros::NodeHandle node;
   ros::NodeHandle nh("~");
 
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
   cmd.kv[1] = vel_gain[1];
   cmd.kv[2] = vel_gain[2];
 
-  nh.param("traj_server/time_forward", time_forward_, -1.0);
+  nh.param("trajectory_publisher/time_forward", time_forward_, -1.0);
   last_yaw_ = 0.0;
   last_yaw_dot_ = 0.0;
 

@@ -6,7 +6,7 @@
 #include <ros/ros.h>
 
 #include <bspline_opt/UniformBspline.h>
-#include <traj_utils/polynomial_traj.h>
+#include <minimumSnapTrajGen/polynomial_traj.h>
 
 using std::vector;
 
