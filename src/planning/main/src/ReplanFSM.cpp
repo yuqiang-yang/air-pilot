@@ -30,31 +30,31 @@ namespace air_pilot
     /* initialize main modules */
     visualization_.reset(new PlanningVisualization(nh));
     pm_.reset(new PlannerManager);
-    pm_->initPlanModules(nh, visualization_);
+    pm_->init(nh, visualization_);
 
     /* callback */
-    exec_timer_ = nh.createTimer(ros::Duration(0.01), &ReplanFSM::execFSMCallback, this);
-    safety_timer_ = nh.createTimer(ros::Duration(0.05), &ReplanFSM::checkCollisionCallback, this);
+    exec_timer_ = nh.createTimer(ros::Duration(0.01), &ReplanFSM::mainPlanLoop, this);
+    safety_timer_ = nh.createTimer(ros::Duration(0.05), &ReplanFSM::checkTrajCollision, this);
 
-    odom_sub_ = nh.subscribe("/odom_world", 1, &ReplanFSM::odometryCallback, this);
 
+    odom_sub_ = nh.subscribe("/odom_world", 1, &ReplanFSM::odomCb, this);
     bspline_pub_ = nh.advertise<air_pilot::Bspline>("/planning/bspline", 10);
     data_disp_pub_ = nh.advertise<air_pilot::DataDisp>("/planning/data_display", 100);
 
     if (target_type_ == TARGET_TYPE::MANUAL_TARGET)
-      waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &ReplanFSM::waypointCallback, this);
+      waypoint_sub_ = nh.subscribe("/waypoint_generator/waypoints", 1, &ReplanFSM::targetCb, this);
     else if (target_type_ == TARGET_TYPE::PRESET_TARGET)
     {
       ros::Duration(1.0).sleep();
       while (ros::ok() && !have_odom_)
         ros::spinOnce();
-      planGlobalTrajbyGivenWps();
+      miniSnapPlanOptimization();
     }
     else
       cout << "Wrong target_type_ value! target_type_=" << target_type_ << endl;
   }
 
-  void ReplanFSM::planGlobalTrajbyGivenWps()
+  void ReplanFSM::miniSnapPlanOptimization()
   {
     std::vector<Eigen::Vector3d> wps(waypoint_num_);
     for (int i = 0; i < waypoint_num_; i++)
@@ -65,7 +65,7 @@ namespace air_pilot
 
       end_pt_ = wps.back();
     }
-    bool success = pm_->planGlobalTrajWaypoints(odom_pos_, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), wps, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+    bool success = pm_->miniSnapTrajFromWaypoints(odom_pos_, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), wps, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
 
     for (size_t i = 0; i < (size_t)waypoint_num_; i++)
     {
@@ -75,8 +75,6 @@ namespace air_pilot
 
     if (success)
     {
-
-      /*** display ***/
       constexpr double step_size_t = 0.1;
       int i_end = floor(pm_->global_data_.global_duration_ / step_size_t);
       std::vector<Eigen::Vector3d> gloabl_traj(i_end);
@@ -90,14 +88,10 @@ namespace air_pilot
       have_new_target_ = true;
 
       /*** FSM ***/
-      // if (exec_state_ == WAIT_TARGET)
-      changeFSMExecState(GEN_NEW_TRAJ, "TRIG");
-      // else if (exec_state_ == EXEC_TRAJ)
-      //   changeFSMExecState(REPLAN_TRAJ, "TRIG");
+      FSMStateTransition(GEN_NEW_TRAJ, "TRIG");
 
-      // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
       ros::Duration(0.001).sleep();
-      visualization_->displayGlobalPathList(gloabl_traj, 0.1, 0);
+      visualization_->displayGlobalPath(gloabl_traj, 0.1, 0);
       ros::Duration(0.001).sleep();
     }
     else
@@ -106,18 +100,16 @@ namespace air_pilot
     }
   }
 
-  void ReplanFSM::waypointCallback(const nav_msgs::PathConstPtr &msg)
+  void ReplanFSM::targetCb(const nav_msgs::PathConstPtr &msg)
   {
     if (msg->poses[0].pose.position.z < -0.1)
       return;
-
-    cout << "Triggered!" << endl;
     trigger_ = true;
     init_pt_ = odom_pos_;
 
     bool success = false;
     end_pt_ << msg->poses[0].pose.position.x, msg->poses[0].pose.position.y, 1.0;
-    success = pm_->planGlobalTraj(odom_pos_, odom_vel_, Eigen::Vector3d::Zero(), end_pt_, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+    success = pm_->miniSnapTrajFromTwoPoints(odom_pos_, odom_vel_, Eigen::Vector3d::Zero(), end_pt_, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
 
     visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(0, 0.5, 0.5, 1), 0.3, 0);
 
@@ -139,12 +131,12 @@ namespace air_pilot
 
       /*** FSM ***/
       if (exec_state_ == WAIT_TARGET)
-        changeFSMExecState(GEN_NEW_TRAJ, "TRIG");
+        FSMStateTransition(GEN_NEW_TRAJ, "TRIG");
       else if (exec_state_ == EXEC_TRAJ)
-        changeFSMExecState(REPLAN_TRAJ, "TRIG");
+        FSMStateTransition(REPLAN_TRAJ, "TRIG");
 
       // visualization_->displayGoalPoint(end_pt_, Eigen::Vector4d(1, 0, 0, 1), 0.3, 0);
-      visualization_->displayGlobalPathList(gloabl_traj, 0.1, 0);
+      visualization_->displayGlobalPath(gloabl_traj, 0.1, 0);
     }
     else
     {
@@ -152,7 +144,7 @@ namespace air_pilot
     }
   }
 
-  void ReplanFSM::odometryCallback(const nav_msgs::OdometryConstPtr &msg)
+  void ReplanFSM::odomCb(const nav_msgs::OdometryConstPtr &msg)
   {
     odom_pos_(0) = msg->pose.pose.position.x;
     odom_pos_(1) = msg->pose.pose.position.y;
@@ -172,7 +164,7 @@ namespace air_pilot
     have_odom_ = true;
   }
 
-  void ReplanFSM::changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call)
+  void ReplanFSM::FSMStateTransition(FSM_EXEC_STATE new_state, string pos_call)
   {
 
     if (new_state == exec_state_)
@@ -191,21 +183,21 @@ namespace air_pilot
     return std::pair<int, FSM_EXEC_STATE>(continously_called_times_, exec_state_);
   }
 
-  void ReplanFSM::printFSMExecState()
+  void ReplanFSM::printFSM()
   {
     static string state_str[7] = {"INIT", "WAIT_TARGET", "GEN_NEW_TRAJ", "REPLAN_TRAJ", "EXEC_TRAJ", "EMERGENCY_STOP"};
 
     cout << "[FSM]: state: " + state_str[int(exec_state_)] << endl;
   }
 
-  void ReplanFSM::execFSMCallback(const ros::TimerEvent &e)
+  void ReplanFSM::mainPlanLoop(const ros::TimerEvent &e)
   {
 
     static int fsm_num = 0;
     fsm_num++;
     if (fsm_num == 100)
     {
-      printFSMExecState();
+      printFSM();
       if (!have_odom_)
         cout << "no odom." << endl;
       if (!trigger_)
@@ -225,7 +217,7 @@ namespace air_pilot
       {
         return;
       }
-      changeFSMExecState(WAIT_TARGET, "FSM");
+      FSMStateTransition(WAIT_TARGET, "FSM");
       break;
     }
 
@@ -235,7 +227,7 @@ namespace air_pilot
         return;
       else
       {
-        changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+        FSMStateTransition(GEN_NEW_TRAJ, "FSM");
       }
       break;
     }
@@ -246,9 +238,6 @@ namespace air_pilot
       start_vel_ = odom_vel_;
       start_acc_.setZero();
 
-      // Eigen::Vector3d rot_x = odom_orient_.toRotationMatrix().block(0, 0, 3, 1);
-      // start_yaw_(0)         = atan2(rot_x(1), rot_x(0));
-      // start_yaw_(1) = start_yaw_(2) = 0.0;
 
       bool flag_random_poly_init;
       if (timesOfConsecutiveStateCalls().first == 1)
@@ -256,32 +245,30 @@ namespace air_pilot
       else
         flag_random_poly_init = true;
 
-      bool success = callReboundReplan(true, flag_random_poly_init);
+      bool success = callOptimizeOnce(true, flag_random_poly_init);
       if (success)
       {
 
-        changeFSMExecState(EXEC_TRAJ, "FSM");
+        FSMStateTransition(EXEC_TRAJ, "FSM");
         flag_escape_emergency_ = true;
       }
       else
       {
-        changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+        FSMStateTransition(GEN_NEW_TRAJ, "FSM");
       }
       break;
     }
 
     case REPLAN_TRAJ:
     {
-
-      if (planFromCurrentTraj())
+      if (iterativeReplan())
       {
-        changeFSMExecState(EXEC_TRAJ, "FSM");
+        FSMStateTransition(EXEC_TRAJ, "FSM");
       }
       else
       {
-        changeFSMExecState(REPLAN_TRAJ, "FSM");
+        FSMStateTransition(REPLAN_TRAJ, "FSM");
       }
-
       break;
     }
 
@@ -300,7 +287,7 @@ namespace air_pilot
       {
         have_target_ = false;
 
-        changeFSMExecState(WAIT_TARGET, "FSM");
+        FSMStateTransition(WAIT_TARGET, "FSM");
         return;
       }
       else if ((end_pt_ - pos).norm() < no_replan_thresh_)
@@ -315,7 +302,7 @@ namespace air_pilot
       }
       else
       {
-        changeFSMExecState(REPLAN_TRAJ, "FSM");
+        FSMStateTransition(REPLAN_TRAJ, "FSM");
       }
       break;
     }
@@ -330,7 +317,7 @@ namespace air_pilot
       else
       {
         if (odom_vel_.norm() < 0.1)
-          changeFSMExecState(GEN_NEW_TRAJ, "FSM");
+          FSMStateTransition(GEN_NEW_TRAJ, "FSM");
       }
 
       flag_escape_emergency_ = false;
@@ -342,7 +329,7 @@ namespace air_pilot
     data_disp_pub_.publish(data_disp_);
   }
 
-  bool ReplanFSM::planFromCurrentTraj()
+  bool ReplanFSM::iterativeReplan()
   {
 
     LocalTrajData *info = &pm_->local_data_;
@@ -355,15 +342,15 @@ namespace air_pilot
     start_vel_ = info->velocity_traj_.evaluateDeBoorT(t_cur);
     start_acc_ = info->acceleration_traj_.evaluateDeBoorT(t_cur);
 
-    bool success = callReboundReplan(false, false);
+    bool success = callOptimizeOnce(false, false);
 
     if (!success)
     {
-      success = callReboundReplan(true, false);
-      //changeFSMExecState(EXEC_TRAJ, "FSM");
+      success = callOptimizeOnce(true, false);
+      //FSMStateTransition(EXEC_TRAJ, "FSM");
       if (!success)
       {
-        success = callReboundReplan(true, true);
+        success = callOptimizeOnce(true, true);
         if (!success)
         {
           return false;
@@ -374,7 +361,7 @@ namespace air_pilot
     return true;
   }
 
-  void ReplanFSM::checkCollisionCallback(const ros::TimerEvent &e)
+  void ReplanFSM::checkTrajCollision(const ros::TimerEvent &e)
   {
     LocalTrajData *info = &pm_->local_data_;
     auto map = pm_->grid_map_;
@@ -393,9 +380,9 @@ namespace air_pilot
 
       if (map->getInflateOccupancy(info->position_traj_.evaluateDeBoorT(t)))
       {
-        if (planFromCurrentTraj()) // Make a chance
+        if (iterativeReplan()) // Make a chance
         {
-          changeFSMExecState(EXEC_TRAJ, "SAFETY");
+          FSMStateTransition(EXEC_TRAJ, "SAFETY");
           return;
         }
         else
@@ -403,12 +390,12 @@ namespace air_pilot
           if (t - t_cur < emergency_time_) // 0.8s of emergency time
           {
             ROS_WARN("Suddenly discovered obstacles. emergency stop! time=%f", t - t_cur);
-            changeFSMExecState(EMERGENCY_STOP, "SAFETY");
+            FSMStateTransition(EMERGENCY_STOP, "SAFETY");
           }
           else
           {
             //ROS_WARN("current traj in collision, replan.");
-            changeFSMExecState(REPLAN_TRAJ, "SAFETY");
+            FSMStateTransition(REPLAN_TRAJ, "SAFETY");
           }
           return;
         }
@@ -417,13 +404,13 @@ namespace air_pilot
     }
   }
 
-  bool ReplanFSM::callReboundReplan(bool flag_use_poly_init, bool flag_randomPolyTraj)
+  bool ReplanFSM::callOptimizeOnce(bool flag_use_poly_init, bool flag_randomPolyTraj)
   {
 
     getLocalTarget();
 
     bool plan_success =
-        pm_->reboundReplan(start_pt_, start_vel_, start_acc_, local_target_pt_, local_target_vel_, (have_new_target_ || flag_use_poly_init), flag_randomPolyTraj);
+        pm_->OptimizeOnce(start_pt_, start_vel_, start_acc_, local_target_pt_, local_target_vel_, (have_new_target_ || flag_use_poly_init), flag_randomPolyTraj);
     have_new_target_ = false;
 
     cout << "final_plan_success=" << plan_success << endl;

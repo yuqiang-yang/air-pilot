@@ -42,7 +42,7 @@ namespace air_pilot
     void generateArrowDisplayArray(visualization_msgs::MarkerArray &array,
                                    const vector<Eigen::Vector3d> &list, double scale, Eigen::Vector4d color, int id);
     void displayGoalPoint(Eigen::Vector3d goal_point, Eigen::Vector4d color, const double scale, int id);
-    void displayGlobalPathList(vector<Eigen::Vector3d> global_pts, const double scale, int id);
+    void displayGlobalPath(vector<Eigen::Vector3d> global_pts, const double scale, int id);
     void displayInitPathList(vector<Eigen::Vector3d> init_pts, const double scale, int id);
     void displayOptimalList(Eigen::MatrixXd optimal_pts, int id);
     void displayAStarList(std::vector<std::vector<Eigen::Vector3d>> a_star_paths, int id);

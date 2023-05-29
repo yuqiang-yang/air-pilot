@@ -152,7 +152,7 @@ namespace air_pilot
     goal_point_pub.publish(sphere);
   }
 
-  void PlanningVisualization::displayGlobalPathList(vector<Eigen::Vector3d> init_pts, const double scale, int id)
+  void PlanningVisualization::displayGlobalPath(vector<Eigen::Vector3d> init_pts, const double scale, int id)
   {
 
     if (global_list_pub.getNumSubscribers() == 0)

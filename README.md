@@ -9,7 +9,7 @@ A lite-version motion planning project for multicopter.
 - package.xml
 
 ## perception
-
+删除不必要的函数和判断
 ## planning
 删掉gradient decent optimizer.cpp
 修改fsm中的初始轨迹生成

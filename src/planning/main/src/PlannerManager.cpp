@@ -11,7 +11,7 @@ namespace air_pilot
 
   PlannerManager::~PlannerManager() { std::cout << "des manager" << std::endl; }
 
-  void PlannerManager::initPlanModules(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
+  void PlannerManager::init(ros::NodeHandle &nh, PlanningVisualization::Ptr vis)
   {
     /* read algorithm parameters */
 
@@ -26,20 +26,18 @@ namespace air_pilot
     grid_map_.reset(new GridMap);
     grid_map_->initMap(nh);
 
-    bspline_optimizer_rebound_.reset(new BsplineOptimizer);
-    bspline_optimizer_rebound_->setParam(nh);
-    bspline_optimizer_rebound_->setEnvironment(grid_map_);
-    bspline_optimizer_rebound_->a_star_.reset(new AStar);
-    bspline_optimizer_rebound_->a_star_->initGridMap(grid_map_, Eigen::Vector3i(100, 100, 100));
+    optimizer_.reset(new BsplineOptimizer);
+    optimizer_->setParam(nh);
+    optimizer_->setEnvironment(grid_map_);
+    optimizer_->a_star_.reset(new AStar);
+    optimizer_->a_star_->initGridMap(grid_map_, Eigen::Vector3i(100, 100, 100));
 
-    visualization_ = vis;
+    visualization_ = vis; // For visualization only
   }
 
-  // !SECTION
 
-  // SECTION rebond replanning
 
-  bool PlannerManager::reboundReplan(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel,
+  bool PlannerManager::OptimizeOnce(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel,
                                         Eigen::Vector3d start_acc, Eigen::Vector3d local_target_pt,
                                         Eigen::Vector3d local_target_vel, bool flag_polyInit, bool flag_randomPolyTraj)
   {
@@ -212,7 +210,7 @@ namespace air_pilot
     UniformBspline::parameterizeToBspline(ts, point_set, start_end_derivatives, ctrl_pts);
 
     vector<vector<Eigen::Vector3d>> a_star_pathes;
-    a_star_pathes = bspline_optimizer_rebound_->initControlPoints(ctrl_pts, true);
+    a_star_pathes = optimizer_->initControlPoints(ctrl_pts, true);
 
     t_init = ros::Time::now() - t_start;
 
@@ -223,7 +221,7 @@ namespace air_pilot
     t_start = ros::Time::now();
 
     /*** STEP 2: OPTIMIZE ***/
-    bool flag_step_1_success = bspline_optimizer_rebound_->BsplineOptimizeTrajRebound(ctrl_pts, ts);
+    bool flag_step_1_success = optimizer_->BsplineOptimizeTrajRebound(ctrl_pts, ts);
     cout << "first_optimize_step_success=" << flag_step_1_success << endl;
     if (!flag_step_1_success)
     {
@@ -247,7 +245,7 @@ namespace air_pilot
       cout << "Need to reallocate time." << endl;
 
       Eigen::MatrixXd optimal_control_points;
-      flag_step_2_success = refineTrajAlgo(pos, start_end_derivatives, ratio, ts, optimal_control_points);
+      flag_step_2_success = refineTraj(pos, start_end_derivatives, ratio, ts, optimal_control_points);
       if (flag_step_2_success)
         pos = UniformBspline(optimal_control_points, 3, ts);
     }
@@ -262,7 +260,7 @@ namespace air_pilot
     t_refine = ros::Time::now() - t_start;
 
     // save planned results
-    updateTrajInfo(pos, ros::Time::now());
+    updateManagerVariable(pos, ros::Time::now());
 
     cout << "total time:\033[42m" << (t_init + t_opt + t_refine).toSec() << "\033[0m,optimize:" << (t_init + t_opt).toSec() << ",refine:" << t_refine.toSec() << endl;
 
@@ -279,12 +277,12 @@ namespace air_pilot
       control_points.col(i) = stop_pos;
     }
 
-    updateTrajInfo(UniformBspline(control_points, 3, 1.0), ros::Time::now());
+    updateManagerVariable(UniformBspline(control_points, 3, 1.0), ros::Time::now());
 
     return true;
   }
 
-  bool PlannerManager::planGlobalTrajWaypoints(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
+  bool PlannerManager::miniSnapTrajFromWaypoints(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
                                                   const std::vector<Eigen::Vector3d> &waypoints, const Eigen::Vector3d &end_vel, const Eigen::Vector3d &end_acc)
   {
 
@@ -329,11 +327,6 @@ namespace air_pilot
 
     inter_points.push_back(points.back());
 
-    // for ( int i=0; i<inter_points.size(); i++ )
-    // {
-    //   cout << inter_points[i].transpose() << endl;
-    // }
-
     // write position matrix
     int pt_num = inter_points.size();
     Eigen::MatrixXd pos(3, pt_num);
@@ -364,7 +357,7 @@ namespace air_pilot
     return true;
   }
 
-  bool PlannerManager::planGlobalTraj(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
+  bool PlannerManager::miniSnapTrajFromTwoPoints(const Eigen::Vector3d &start_pos, const Eigen::Vector3d &start_vel, const Eigen::Vector3d &start_acc,
                                          const Eigen::Vector3d &end_pos, const Eigen::Vector3d &end_vel, const Eigen::Vector3d &end_acc)
   {
 
@@ -428,7 +421,7 @@ namespace air_pilot
     return true;
   }
 
-  bool PlannerManager::refineTrajAlgo(UniformBspline &traj, vector<Eigen::Vector3d> &start_end_derivative, double ratio, double &ts, Eigen::MatrixXd &optimal_control_points)
+  bool PlannerManager::refineTraj(UniformBspline &traj, vector<Eigen::Vector3d> &start_end_derivative, double ratio, double &ts, Eigen::MatrixXd &optimal_control_points)
   {
     double t_inc;
 
@@ -440,16 +433,16 @@ namespace air_pilot
     traj = UniformBspline(ctrl_pts, 3, ts);
 
     double t_step = traj.getTimeSum() / (ctrl_pts.cols() - 3);
-    bspline_optimizer_rebound_->ref_pts_.clear();
+    optimizer_->ref_pts_.clear();
     for (double t = 0; t < traj.getTimeSum() + 1e-4; t += t_step)
-      bspline_optimizer_rebound_->ref_pts_.push_back(traj.evaluateDeBoorT(t));
+      optimizer_->ref_pts_.push_back(traj.evaluateDeBoorT(t));
 
-    bool success = bspline_optimizer_rebound_->BsplineOptimizeTrajRefine(ctrl_pts, ts, optimal_control_points);
+    bool success = optimizer_->BsplineOptimizeTrajRefine(ctrl_pts, ts, optimal_control_points);
 
     return success;
   }
 
-  void PlannerManager::updateTrajInfo(const UniformBspline &position_traj, const ros::Time time_now)
+  void PlannerManager::updateManagerVariable(const UniformBspline &position_traj, const ros::Time time_now)
   {
     local_data_.start_time_ = time_now;
     local_data_.position_traj_ = position_traj;

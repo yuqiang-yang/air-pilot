@@ -79,23 +79,23 @@ namespace air_pilot
     ros::Publisher replan_pub_, new_pub_, bspline_pub_, data_disp_pub_;
 
     /* helper functions */
-    bool callReboundReplan(bool flag_use_poly_init, bool flag_randomPolyTraj); // front-end and back-end method
+    bool callOptimizeOnce(bool flag_use_poly_init, bool flag_randomPolyTraj); // front-end and back-end method
     bool callEmergencyStop(Eigen::Vector3d stop_pos);                          // front-end and back-end method
-    bool planFromCurrentTraj();
+    bool iterativeReplan();
 
     /* return value: std::pair< Times of the same state be continuously called, current continuously called state > */
-    void changeFSMExecState(FSM_EXEC_STATE new_state, string pos_call);
+    void FSMStateTransition(FSM_EXEC_STATE new_state, string pos_call);
     std::pair<int, ReplanFSM::FSM_EXEC_STATE> timesOfConsecutiveStateCalls();
-    void printFSMExecState();
+    void printFSM();
 
-    void planGlobalTrajbyGivenWps();
+    void miniSnapPlanOptimization();
     void getLocalTarget();
 
     /* ROS functions */
-    void execFSMCallback(const ros::TimerEvent &e);
-    void checkCollisionCallback(const ros::TimerEvent &e);
-    void waypointCallback(const nav_msgs::PathConstPtr &msg);
-    void odometryCallback(const nav_msgs::OdometryConstPtr &msg);
+    void mainPlanLoop(const ros::TimerEvent &e);
+    void checkTrajCollision(const ros::TimerEvent &e);
+    void targetCb(const nav_msgs::PathConstPtr &msg);
+    void odomCb(const nav_msgs::OdometryConstPtr &msg);
 
     bool checkCollision();
 
