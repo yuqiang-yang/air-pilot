@@ -1,9 +1,8 @@
-#include "plan_env/SDFMap.h"
+#include "mapping/ESDFMap.h"
 
-// #define current_img_ md_.depth_image_[image_cnt_ & 1]
-// #define last_img_ md_.depth_image_[!(image_cnt_ & 1)]
 
-void SDFMap::initMap(ros::NodeHandle& nh) {
+
+void ESDFMap::initMap(ros::NodeHandle& nh) {
   node_ = nh;
 
   /* get parameter */
@@ -111,27 +110,27 @@ void SDFMap::initMap(ros::NodeHandle& nh) {
 
     sync_image_pose_.reset(new message_filters::Synchronizer<SyncPolicyImagePose>(
         SyncPolicyImagePose(100), *depth_sub_, *pose_sub_));
-    sync_image_pose_->registerCallback(boost::bind(&SDFMap::depthPoseCallback, this, _1, _2));
+    sync_image_pose_->registerCallback(boost::bind(&ESDFMap::depthPoseCallback, this, _1, _2));
 
   } else if (mp_.pose_type_ == ODOMETRY) {
     odom_sub_.reset(new message_filters::Subscriber<nav_msgs::Odometry>(node_, "/sdf_map/odom", 100));
 
     sync_image_odom_.reset(new message_filters::Synchronizer<SyncPolicyImageOdom>(
         SyncPolicyImageOdom(100), *depth_sub_, *odom_sub_));
-    sync_image_odom_->registerCallback(boost::bind(&SDFMap::depthOdomCallback, this, _1, _2));
+    sync_image_odom_->registerCallback(boost::bind(&ESDFMap::depthOdomCallback, this, _1, _2));
   }
   
 
   // use odometry and point cloud
 
   indep_cloud_sub_ =
-      node_.subscribe<sensor_msgs::PointCloud2>("/sdf_map/cloud", 10, &SDFMap::cloudCallback, this);
+      node_.subscribe<sensor_msgs::PointCloud2>("/sdf_map/cloud", 10, &ESDFMap::cloudCallback, this);
   indep_odom_sub_ =
-      node_.subscribe<nav_msgs::Odometry>("/sdf_map/odom", 10, &SDFMap::odomCallback, this);
+      node_.subscribe<nav_msgs::Odometry>("/sdf_map/odom", 10, &ESDFMap::odomCallback, this);
 
-  // occ_timer_ = node_.createTimer(ros::Duration(0.05), &SDFMap::updateOccupancyCallback, this);
-  esdf_timer_ = node_.createTimer(ros::Duration(0.05), &SDFMap::updateESDFCallback, this);
-  vis_timer_ = node_.createTimer(ros::Duration(0.05), &SDFMap::visCallback, this);
+  // occ_timer_ = node_.createTimer(ros::Duration(0.05), &ESDFMap::updateGridMapCb, this);
+  esdf_timer_ = node_.createTimer(ros::Duration(0.05), &ESDFMap::localMaupdateESDFCb, this);
+  vis_timer_ = node_.createTimer(ros::Duration(0.05), &ESDFMap::visualizationCb, this);
 
   map_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/occupancy", 10);
   map_inf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/sdf_map/occupancy_inflate", 10);
@@ -158,10 +157,9 @@ void SDFMap::initMap(ros::NodeHandle& nh) {
   rand_noise_ = uniform_real_distribution<double>(-0.2, 0.2);
   rand_noise2_ = normal_distribution<double>(0, 0.2);
   random_device rd;
-  eng_ = default_random_engine(rd());
 }
 
-void SDFMap::resetBuffer() {
+void ESDFMap::resetBuffer() {
   Eigen::Vector3d min_pos = mp_.map_min_boundary_;
   Eigen::Vector3d max_pos = mp_.map_max_boundary_;
 
@@ -171,7 +169,7 @@ void SDFMap::resetBuffer() {
   md_.local_bound_max_ = mp_.map_voxel_num_ - Eigen::Vector3i::Ones();
 }
 
-void SDFMap::resetBuffer(Eigen::Vector3d min_pos, Eigen::Vector3d max_pos) {
+void ESDFMap::resetBuffer(Eigen::Vector3d min_pos, Eigen::Vector3d max_pos) {
 
   Eigen::Vector3i min_id, max_id;
   posToIndex(min_pos, min_id);
@@ -190,7 +188,7 @@ void SDFMap::resetBuffer(Eigen::Vector3d min_pos, Eigen::Vector3d max_pos) {
 }
 
 template <typename F_get_val, typename F_set_val>
-void SDFMap::fillESDF(F_get_val f_get_val, F_set_val f_set_val, int start, int end, int dim) {
+void ESDFMap::fillESDF(F_get_val f_get_val, F_set_val f_set_val, int start, int end, int dim) {
   int v[mp_.map_voxel_num_(dim)];
   double z[mp_.map_voxel_num_(dim) + 1];
 
@@ -224,7 +222,7 @@ void SDFMap::fillESDF(F_get_val f_get_val, F_set_val f_set_val, int start, int e
   }
 }
 
-void SDFMap::updateESDF3d() {
+void ESDFMap::updateESDF3d() {
   Eigen::Vector3i min_esdf = md_.local_bound_min_;
   Eigen::Vector3i max_esdf = md_.local_bound_max_;
 
@@ -326,7 +324,7 @@ void SDFMap::updateESDF3d() {
       }
 }
 
-int SDFMap::setCacheOccupancy(Eigen::Vector3d pos, int occ) {
+int ESDFMap::setVoxelState(Eigen::Vector3d pos, int occ) {
   if (occ != 1 && occ != 0) return INVALID_IDX;
 
   Eigen::Vector3i id;
@@ -344,7 +342,7 @@ int SDFMap::setCacheOccupancy(Eigen::Vector3d pos, int occ) {
   return idx_ctns;
 }
 
-void SDFMap::projectDepthImage() {
+void ESDFMap::projectDepthImage() {
   // md_.proj_points_.clear();
   md_.proj_points_cnt = 0;
 
@@ -400,9 +398,7 @@ void SDFMap::projectDepthImage() {
           depth = (*row_ptr) * inv_factor;
           row_ptr = row_ptr + mp_.skip_pixel_;
 
-          // filter depth
-          // depth += rand_noise_(eng_);
-          // if (depth > 0.01) depth += rand_noise2_(eng_);
+    
 
           if (*row_ptr == 0) {
             depth = mp_.max_ray_length_ + 0.1;
@@ -451,7 +447,7 @@ void SDFMap::projectDepthImage() {
   md_.last_depth_image_ = md_.depth_image_;
 }
 
-void SDFMap::raycastProcess() {
+void ESDFMap::raycastProcess() {
   // if (md_.proj_points_.size() == 0)
   if (md_.proj_points_cnt == 0) return;
 
@@ -487,16 +483,16 @@ void SDFMap::raycastProcess() {
       if (length > mp_.max_ray_length_) {
         pt_w = (pt_w - md_.camera_pos_) / length * mp_.max_ray_length_ + md_.camera_pos_;
       }
-      vox_idx = setCacheOccupancy(pt_w, 0);
+      vox_idx = setVoxelState(pt_w, 0);
 
     } else {
       length = (pt_w - md_.camera_pos_).norm();
 
       if (length > mp_.max_ray_length_) {
         pt_w = (pt_w - md_.camera_pos_) / length * mp_.max_ray_length_ + md_.camera_pos_;
-        vox_idx = setCacheOccupancy(pt_w, 0);
+        vox_idx = setVoxelState(pt_w, 0);
       } else {
-        vox_idx = setCacheOccupancy(pt_w, 1);
+        vox_idx = setVoxelState(pt_w, 1);
       }
     }
 
@@ -526,7 +522,7 @@ void SDFMap::raycastProcess() {
 
       // if (length < mp_.min_ray_length_) break;
 
-      vox_idx = setCacheOccupancy(tmp, 0);
+      vox_idx = setVoxelState(tmp, 0);
 
       if (vox_idx != INVALID_IDX) {
         if (md_.flag_traverse_[vox_idx] == md_.raycast_num_) {
@@ -603,7 +599,7 @@ void SDFMap::raycastProcess() {
   }
 }
 
-Eigen::Vector3d SDFMap::closetPointInMap(const Eigen::Vector3d& pt, const Eigen::Vector3d& camera_pt) {
+Eigen::Vector3d ESDFMap::closetPointInMap(const Eigen::Vector3d& pt, const Eigen::Vector3d& camera_pt) {
   Eigen::Vector3d diff = pt - camera_pt;
   Eigen::Vector3d max_tc = mp_.map_max_boundary_ - camera_pt;
   Eigen::Vector3d min_tc = mp_.map_min_boundary_ - camera_pt;
@@ -624,7 +620,7 @@ Eigen::Vector3d SDFMap::closetPointInMap(const Eigen::Vector3d& pt, const Eigen:
   return camera_pt + (min_t - 1e-3) * diff;
 }
 
-void SDFMap::clearAndInflateLocalMap() {
+void ESDFMap::clearAndInflateLocalMap() {
   /*clear outside local*/
   const int vec_margin = 5;
   // Eigen::Vector3i min_vec_margin = min_vec - Eigen::Vector3i(vec_margin,
@@ -738,7 +734,7 @@ void SDFMap::clearAndInflateLocalMap() {
   }
 }
 
-void SDFMap::visCallback(const ros::TimerEvent& /*event*/) {
+void ESDFMap::visualizationCb(const ros::TimerEvent& /*event*/) {
   publishMap();
   publishMapInflate(false);
   // publishUpdateRange();
@@ -748,7 +744,7 @@ void SDFMap::visCallback(const ros::TimerEvent& /*event*/) {
   // publishDepth();
 }
 
-void SDFMap::updateOccupancyCallback(const ros::TimerEvent& /*event*/) {
+void ESDFMap::updateGridMapCb(const ros::TimerEvent& /*event*/) {
   if (!md_.occ_need_update_) return;
 
   /* update occupancy */
@@ -774,7 +770,7 @@ void SDFMap::updateOccupancyCallback(const ros::TimerEvent& /*event*/) {
   md_.local_updated_ = false;
 }
 
-void SDFMap::updateESDFCallback(const ros::TimerEvent& /*event*/) {
+void ESDFMap::localMaupdateESDFCb(const ros::TimerEvent& /*event*/) {
   if (!md_.esdf_need_update_) return;
 
   /* esdf */
@@ -792,7 +788,7 @@ void SDFMap::updateESDFCallback(const ros::TimerEvent& /*event*/) {
   md_.esdf_need_update_ = false;
 }
 
-void SDFMap::depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
+void ESDFMap::depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
                                const geometry_msgs::PoseStampedConstPtr& pose) {
   /* get depth image */
   cv_bridge::CvImagePtr cv_ptr;
@@ -820,7 +816,7 @@ void SDFMap::depthPoseCallback(const sensor_msgs::ImageConstPtr& img,
   }
 }
 
-void SDFMap::odomCallback(const nav_msgs::OdometryConstPtr& odom) {
+void ESDFMap::odomCallback(const nav_msgs::OdometryConstPtr& odom) {
   // remove by yq
   // if (md_.has_first_depth_) return; 
 
@@ -832,7 +828,7 @@ void SDFMap::odomCallback(const nav_msgs::OdometryConstPtr& odom) {
   md_.has_odom_ = true;
 }
 
-void SDFMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr& img) {
+void ESDFMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr& img) {
 
   pcl::PointCloud<pcl::PointXYZ> latest_cloud;
   pcl::fromROSMsg(*img, latest_cloud);
@@ -925,7 +921,7 @@ void SDFMap::cloudCallback(const sensor_msgs::PointCloud2ConstPtr& img) {
   md_.esdf_need_update_ = true;
 }
 
-void SDFMap::publishMap() {
+void ESDFMap::publishMap() {
   // pcl::PointXYZ pt;
   // pcl::PointCloud<pcl::PointXYZ> cloud;
 
@@ -1002,7 +998,7 @@ void SDFMap::publishMap() {
   map_pub_.publish(cloud_msg);
 }
 
-void SDFMap::publishMapInflate(bool all_info) {
+void ESDFMap::publishMapInflate(bool all_info) {
   pcl::PointXYZ pt;
   pcl::PointCloud<pcl::PointXYZ> cloud;
 
@@ -1045,7 +1041,7 @@ void SDFMap::publishMapInflate(bool all_info) {
   // ROS_INFO("pub map");
 }
 
-void SDFMap::publishUnknown() {
+void ESDFMap::publishUnknown() {
   pcl::PointXYZ pt;
   pcl::PointCloud<pcl::PointXYZ> cloud;
 
@@ -1085,7 +1081,7 @@ void SDFMap::publishUnknown() {
   unknown_pub_.publish(cloud_msg);
 }
 
-void SDFMap::publishDepth() {
+void ESDFMap::publishDepth() {
   pcl::PointXYZ pt;
   pcl::PointCloud<pcl::PointXYZ> cloud;
 
@@ -1106,7 +1102,7 @@ void SDFMap::publishDepth() {
   depth_pub_.publish(cloud_msg);
 }
 
-void SDFMap::publishUpdateRange() {
+void ESDFMap::publishUpdateRange() {
   Eigen::Vector3d esdf_min_pos, esdf_max_pos, cube_pos, cube_scale;
   visualization_msgs::Marker mk;
   indexToPos(md_.local_bound_min_, esdf_min_pos);
@@ -1141,7 +1137,7 @@ void SDFMap::publishUpdateRange() {
   update_range_pub_.publish(mk);
 }
 
-void SDFMap::publishESDF() {
+void ESDFMap::publishESDF() {
   double dist;
   pcl::PointCloud<pcl::PointXYZI> cloud;
   pcl::PointXYZI pt;
@@ -1186,7 +1182,7 @@ void SDFMap::publishESDF() {
   // ROS_INFO("pub esdf");
 }
 
-void SDFMap::getSliceESDF(const double height, const double res, const Eigen::Vector4d& range,
+void ESDFMap::getSliceESDF(const double height, const double res, const Eigen::Vector4d& range,
                           vector<Eigen::Vector3d>& slice, vector<Eigen::Vector3d>& grad, int sign) {
   double dist;
   Eigen::Vector3d gd;
@@ -1199,7 +1195,7 @@ void SDFMap::getSliceESDF(const double height, const double res, const Eigen::Ve
     }
 }
 
-void SDFMap::checkDist() {
+void ESDFMap::checkDist() {
   for (int x = 0; x < mp_.map_voxel_num_(0); ++x)
     for (int y = 0; y < mp_.map_voxel_num_(1); ++y)
       for (int z = 0; z < mp_.map_voxel_num_(2); ++z) {
@@ -1214,23 +1210,23 @@ void SDFMap::checkDist() {
       }
 }
 
-bool SDFMap::odomValid() { return md_.has_odom_; }
+bool ESDFMap::odomValid() { return md_.has_odom_; }
 
-bool SDFMap::hasDepthObservation() { return md_.has_first_depth_; }
+bool ESDFMap::hasDepthObservation() { return md_.has_first_depth_; }
 
-double SDFMap::getResolution() { return mp_.resolution_; }
+double ESDFMap::getResolution() { return mp_.resolution_; }
 
-Eigen::Vector3d SDFMap::getOrigin() { return mp_.map_origin_; }
+Eigen::Vector3d ESDFMap::getOrigin() { return mp_.map_origin_; }
 
-int SDFMap::getVoxelNum() {
+int ESDFMap::getVoxelNum() {
   return mp_.map_voxel_num_[0] * mp_.map_voxel_num_[1] * mp_.map_voxel_num_[2];
 }
 
-void SDFMap::getRegion(Eigen::Vector3d& ori, Eigen::Vector3d& size) {
+void ESDFMap::getRegion(Eigen::Vector3d& ori, Eigen::Vector3d& size) {
   ori = mp_.map_origin_, size = mp_.map_size_;
 }
 
-void SDFMap::getSurroundPts(const Eigen::Vector3d& pos, Eigen::Vector3d pts[2][2][2],
+void ESDFMap::getSurroundPts(const Eigen::Vector3d& pos, Eigen::Vector3d pts[2][2][2],
                             Eigen::Vector3d& diff) {
   if (!isInMap(pos)) {
     // cout << "pos invalid for interpolation." << endl;
@@ -1257,7 +1253,7 @@ void SDFMap::getSurroundPts(const Eigen::Vector3d& pos, Eigen::Vector3d pts[2][2
   }
 }
 
-void SDFMap::depthOdomCallback(const sensor_msgs::ImageConstPtr& img,
+void ESDFMap::depthOdomCallback(const sensor_msgs::ImageConstPtr& img,
                                const nav_msgs::OdometryConstPtr& odom) {
   /* get pose */
   md_.camera_pos_(0) = odom->pose.pose.position.x;
@@ -1277,11 +1273,11 @@ void SDFMap::depthOdomCallback(const sensor_msgs::ImageConstPtr& img,
   md_.occ_need_update_ = true;
 }
 
-void SDFMap::depthCallback(const sensor_msgs::ImageConstPtr& img) {
+void ESDFMap::depthCallback(const sensor_msgs::ImageConstPtr& img) {
   std::cout << "depth: " << img->header.stamp << std::endl;
 }
 
-void SDFMap::poseCallback(const geometry_msgs::PoseStampedConstPtr& pose) {
+void ESDFMap::poseCallback(const geometry_msgs::PoseStampedConstPtr& pose) {
   std::cout << "pose: " << pose->header.stamp << std::endl;
 
   md_.camera_pos_(0) = pose->pose.position.x;
@@ -1289,4 +1285,4 @@ void SDFMap::poseCallback(const geometry_msgs::PoseStampedConstPtr& pose) {
   md_.camera_pos_(2) = pose->pose.position.z;
 }
 
-// SDFMap
+// ESDFMap

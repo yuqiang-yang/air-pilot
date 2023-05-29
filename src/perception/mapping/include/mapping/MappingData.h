@@ -18,7 +18,12 @@ struct MappingData {
 
   std::vector<double> occupancy_buffer_;
   std::vector<char> occupancy_buffer_inflate_;
-
+  std::vector<double> distance_buffer_;
+  std::vector<double> distance_buffer_neg_;
+  std::vector<double> distance_buffer_all_;
+  std::vector<char> occupancy_buffer_neg;
+  std::vector<double> tmp_buffer1_;
+  std::vector<double> tmp_buffer2_;
   // camera position and pose data
 
   Eigen::Vector3d camera_pos_, last_camera_pos_;
@@ -33,7 +38,7 @@ struct MappingData {
 
   // flags of map state
 
-  bool occ_need_update_, local_updated_;
+  bool occ_need_update_, local_updated_,esdf_need_update_;
   bool has_first_depth_;
   bool has_odom_, has_cloud_;
 
@@ -55,7 +60,7 @@ struct MappingData {
 
   // computation time
 
-  double fuse_time_, max_fuse_time_;
+  double fuse_time_, max_fuse_time_, esdf_time_, max_esdf_time_;
   int update_num_;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

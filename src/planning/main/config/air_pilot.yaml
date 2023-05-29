@@ -56,6 +56,14 @@ grid_map:
   show_occ_time:  false
   pose_type:  2
   frame_id: "world"
+  raycast_flag: true
+  project_flag:  true
+  visualize_flag:  true
+  esdf_flag: false
+  mapping_frequency: 20.0
+  esdf_slice_height: 0.5
+
+
 
 manager:
   max_vel:  2.0

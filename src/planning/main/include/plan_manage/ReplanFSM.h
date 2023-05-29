@@ -12,7 +12,7 @@
 #include <visualization_msgs/Marker.h>
 
 #include <bspline_opt/BsplineOptimizer.h>
-#include <plan_env/GridMap.h>
+#include <mapping/GridMap.h>
 #include <air_pilot/Bspline.h>
 #include <air_pilot/DataDisp.h>
 #include <plan_manage/PlannerManager.h>

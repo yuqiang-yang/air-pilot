@@ -1,4 +1,4 @@
-#include "plan_env/GridMap.h"
+#include "mapping/GridMap.h"
 
 void GridMap::initMap(ros::NodeHandle &nh)
 {
@@ -36,15 +36,31 @@ void GridMap::initMap(ros::NodeHandle &nh)
   node_.param("grid_map/min_ray_length", mp_.min_ray_length_, -0.1);
   node_.param("grid_map/max_ray_length", mp_.max_ray_length_, -0.1);
 
+  node_.param("grid_map/esdf_slice_height", mp_.esdf_slice_height_, -0.1);
   node_.param("grid_map/visualization_truncate_height", mp_.visualization_truncate_height_, 999.0);
   node_.param("grid_map/virtual_ceil_height", mp_.virtual_ceil_height_, -0.1);
 
   node_.param("grid_map/show_occ_time", mp_.show_occ_time_, false);
+  node_.param("grid_map/show_esdf_time", mp_.show_esdf_time_, false);
+
   node_.param("grid_map/pose_type", mp_.pose_type_, 1);
 
   node_.param("grid_map/frame_id", mp_.frame_id_, string("world"));
   node_.param("grid_map/local_map_margin", mp_.local_map_margin_, 1);
   node_.param("grid_map/ground_height", mp_.ground_height_, 1.0);
+
+  node_.param("grid_map/raycast_flag", raycast_flag_, true);
+  node_.param("grid_map/project_flag", project_flag_, true);
+  node_.param("grid_map/visualize_flag", visualize_flag_, true);
+  node_.param("grid_map/esdf_flag", esdf_flag_, false);
+  node_.param("grid_map/mapping_frequency", mapping_frequency_, 20.0);
+
+
+  bool raycast_flag_ = true;
+  bool project_flag_ = true;
+  bool visualize_flag_ = true;
+  bool esdf_flag_ = false;
+  double mapping_frequency_ = 20.0;
 
   mp_.resolution_inv_ = 1 / mp_.resolution_;
   mp_.map_origin_ = Eigen::Vector3d(-x_size / 2.0, -y_size / 2.0, mp_.ground_height_);
@@ -102,11 +118,16 @@ void GridMap::initMap(ros::NodeHandle &nh)
   indep_odom_sub_ =
       node_.subscribe<nav_msgs::Odometry>("/grid_map/odom", 10, &GridMap::odomCallback, this);
 
-  occ_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::updateOccupancyCallback, this);
-  vis_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::visCallback, this);
+  occ_timer_ = node_.createTimer(ros::Duration(1.0/mapping_frequency_), &GridMap::updateGridMapCb, this);
+  if(visualize_flag_)
+    vis_timer_ = node_.createTimer(ros::Duration(0.05), &GridMap::visualizationCb, this);
+  if(esdf_flag_)
+    esdf_timer_ = node_.createTimer(ros::Duration(1.0/mapping_frequency_), &GridMap::localMaupdateESDFCb, this);
 
   map_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/grid_map/occupancy", 10);
   map_inf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/grid_map/occupancy_inflate", 10);
+  if(esdf_flag_)
+  esdf_pub_ = node_.advertise<sensor_msgs::PointCloud2>("/grid_map/esdf", 10);
 
   md_.occ_need_update_ = false;
   md_.local_updated_ = false;
@@ -152,7 +173,7 @@ void GridMap::resetBuffer(Eigen::Vector3d min_pos, Eigen::Vector3d max_pos)
       }
 }
 
-int GridMap::setCacheOccupancy(Eigen::Vector3d pos, int occ)
+int GridMap::setVoxelState(Eigen::Vector3d pos, int occ)
 {
   if (occ != 1 && occ != 0)
     return INVALID_IDX;
@@ -239,9 +260,7 @@ void GridMap::projectDepthImage()
           depth = (*row_ptr) * inv_factor;
           row_ptr = row_ptr + mp_.skip_pixel_;
 
-          // filter depth
-          // depth += rand_noise_(eng_);
-          // if (depth > 0.01) depth += rand_noise2_(eng_);
+        
 
           if (*row_ptr == 0)
           {
@@ -341,7 +360,7 @@ void GridMap::raycastProcess()
       {
         pt_w = (pt_w - md_.camera_pos_) / length * mp_.max_ray_length_ + md_.camera_pos_;
       }
-      vox_idx = setCacheOccupancy(pt_w, 0);
+      vox_idx = setVoxelState(pt_w, 0);
     }
     else
     {
@@ -350,11 +369,11 @@ void GridMap::raycastProcess()
       if (length > mp_.max_ray_length_)
       {
         pt_w = (pt_w - md_.camera_pos_) / length * mp_.max_ray_length_ + md_.camera_pos_;
-        vox_idx = setCacheOccupancy(pt_w, 0);
+        vox_idx = setVoxelState(pt_w, 0);
       }
       else
       {
-        vox_idx = setCacheOccupancy(pt_w, 1);
+        vox_idx = setVoxelState(pt_w, 1);
       }
     }
 
@@ -389,7 +408,7 @@ void GridMap::raycastProcess()
 
       // if (length < mp_.min_ray_length_) break;
 
-      vox_idx = setCacheOccupancy(tmp, 0);
+      vox_idx = setVoxelState(tmp, 0);
 
       if (vox_idx != INVALID_IDX)
       {
@@ -619,38 +638,36 @@ void GridMap::clearAndInflateLocalMap()
   }
 }
 
-void GridMap::visCallback(const ros::TimerEvent & /*event*/)
+void GridMap::visualizationCb(const ros::TimerEvent & /*event*/)
 {
 
   publishMap();
   publishMapInflate(true);
+  if(esdf_flag_)
+    publishESDF();
 }
 
-void GridMap::updateOccupancyCallback(const ros::TimerEvent & /*event*/)
+void GridMap::updateGridMapCb(const ros::TimerEvent & /*event*/)
 {
   if (!md_.occ_need_update_)
     return;
-
   /* update occupancy */
-  // ros::Time t1, t2, t3, t4;
-  // t1 = ros::Time::now();
-
-  projectDepthImage();
-  // t2 = ros::Time::now();
-  raycastProcess();
-  // t3 = ros::Time::now();
+  ros::Time t1, t2, t3, t4;
+  t1 = ros::Time::now();
+  if(project_flag_)
+    projectDepthImage();
+  t2 = ros::Time::now();
+  if(raycast_flag_)
+    raycastProcess();
+  t3 = ros::Time::now();
 
   if (md_.local_updated_)
     clearAndInflateLocalMap();
 
-  // t4 = ros::Time::now();
+  t4 = ros::Time::now();
 
   // cout << setprecision(7);
   // cout << "t2=" << (t2-t1).toSec() << " t3=" << (t3-t2).toSec() << " t4=" << (t4-t3).toSec() << endl;;
-
-  // md_.fuse_time_ += (t2 - t1).toSec();
-  // md_.max_fuse_time_ = max(md_.max_fuse_time_, (t2 - t1).toSec());
-
   // if (mp_.show_occ_time_)
   //   ROS_WARN("Fusion: cur t = %lf, avg t = %lf, max t = %lf", (t2 - t1).toSec(),
   //            md_.fuse_time_ / md_.update_num_, md_.max_fuse_time_);
@@ -868,16 +885,6 @@ void GridMap::publishMapInflate(bool all_info)
   // ROS_INFO("pub map");
 }
 
-bool GridMap::odomValid() { return md_.has_odom_; }
-
-bool GridMap::hasDepthObservation() { return md_.has_first_depth_; }
-
-Eigen::Vector3d GridMap::getOrigin() { return mp_.map_origin_; }
-
-void GridMap::getRegion(Eigen::Vector3d &ori, Eigen::Vector3d &size)
-{
-  ori = mp_.map_origin_, size = mp_.map_size_;
-}
 
 void GridMap::depthOdomCallback(const sensor_msgs::ImageConstPtr &img,
                                 const nav_msgs::OdometryConstPtr &odom)
@@ -914,4 +921,204 @@ void GridMap::depthOdomCallback(const sensor_msgs::ImageConstPtr &img,
 }
 
 
+
+template <typename F_get_val, typename F_set_val>
+void GridMap::fillESDF(F_get_val f_get_val, F_set_val f_set_val, int start, int end, int dim) {
+  int v[mp_.map_voxel_num_(dim)];
+  double z[mp_.map_voxel_num_(dim) + 1];
+
+  int k = start;
+  v[start] = start;
+  z[start] = -std::numeric_limits<double>::max();
+  z[start + 1] = std::numeric_limits<double>::max();
+
+  for (int q = start + 1; q <= end; q++) {
+    k++;
+    double s;
+
+    do {
+      k--;
+      s = ((f_get_val(q) + q * q) - (f_get_val(v[k]) + v[k] * v[k])) / (2 * q - 2 * v[k]);
+    } while (s <= z[k]);
+
+    k++;
+
+    v[k] = q;
+    z[k] = s;
+    z[k + 1] = std::numeric_limits<double>::max();
+  }
+
+  k = start;
+
+  for (int q = start; q <= end; q++) {
+    while (z[k + 1] < q) k++;
+    double val = (q - v[k]) * (q - v[k]) + f_get_val(v[k]);
+    f_set_val(q, val);
+  }
+}
+
+void GridMap::updateESDF3d() {
+  Eigen::Vector3i min_esdf = md_.local_bound_min_;
+  Eigen::Vector3i max_esdf = md_.local_bound_max_;
+
+  /* ========== compute positive DT ========== */
+
+  for (int x = min_esdf[0]; x <= max_esdf[0]; x++) {
+    for (int y = min_esdf[1]; y <= max_esdf[1]; y++) {
+      fillESDF(
+          [&](int z) {
+            return md_.occupancy_buffer_inflate_[toAddress(x, y, z)] == 1 ?
+                0 :
+                std::numeric_limits<double>::max();
+          },
+          [&](int z, double val) { md_.tmp_buffer1_[toAddress(x, y, z)] = val; }, min_esdf[2],
+          max_esdf[2], 2);
+    }
+  }
+
+  for (int x = min_esdf[0]; x <= max_esdf[0]; x++) {
+    for (int z = min_esdf[2]; z <= max_esdf[2]; z++) {
+      fillESDF([&](int y) { return md_.tmp_buffer1_[toAddress(x, y, z)]; },
+               [&](int y, double val) { md_.tmp_buffer2_[toAddress(x, y, z)] = val; }, min_esdf[1],
+               max_esdf[1], 1);
+    }
+  }
+
+  for (int y = min_esdf[1]; y <= max_esdf[1]; y++) {
+    for (int z = min_esdf[2]; z <= max_esdf[2]; z++) {
+      fillESDF([&](int x) { return md_.tmp_buffer2_[toAddress(x, y, z)]; },
+               [&](int x, double val) {
+                 md_.distance_buffer_[toAddress(x, y, z)] = mp_.resolution_ * std::sqrt(val);
+                 //  min(mp_.resolution_ * std::sqrt(val),
+                 //      md_.distance_buffer_[toAddress(x, y, z)]);
+               },
+               min_esdf[0], max_esdf[0], 0);
+    }
+  }
+
+  /* ========== compute negative distance ========== */
+  for (int x = min_esdf(0); x <= max_esdf(0); ++x)
+    for (int y = min_esdf(1); y <= max_esdf(1); ++y)
+      for (int z = min_esdf(2); z <= max_esdf(2); ++z) {
+
+        int idx = toAddress(x, y, z);
+        if (md_.occupancy_buffer_inflate_[idx] == 0) {
+          md_.occupancy_buffer_neg[idx] = 1;
+
+        } else if (md_.occupancy_buffer_inflate_[idx] == 1) {
+          md_.occupancy_buffer_neg[idx] = 0;
+        } else {
+          ROS_ERROR("what?");
+        }
+      }
+
+  ros::Time t1, t2;
+
+  for (int x = min_esdf[0]; x <= max_esdf[0]; x++) {
+    for (int y = min_esdf[1]; y <= max_esdf[1]; y++) {
+      fillESDF(
+          [&](int z) {
+            return md_.occupancy_buffer_neg[x * mp_.map_voxel_num_(1) * mp_.map_voxel_num_(2) +
+                                            y * mp_.map_voxel_num_(2) + z] == 1 ?
+                0 :
+                std::numeric_limits<double>::max();
+          },
+          [&](int z, double val) { md_.tmp_buffer1_[toAddress(x, y, z)] = val; }, min_esdf[2],
+          max_esdf[2], 2);
+    }
+  }
+
+  for (int x = min_esdf[0]; x <= max_esdf[0]; x++) {
+    for (int z = min_esdf[2]; z <= max_esdf[2]; z++) {
+      fillESDF([&](int y) { return md_.tmp_buffer1_[toAddress(x, y, z)]; },
+               [&](int y, double val) { md_.tmp_buffer2_[toAddress(x, y, z)] = val; }, min_esdf[1],
+               max_esdf[1], 1);
+    }
+  }
+
+  for (int y = min_esdf[1]; y <= max_esdf[1]; y++) {
+    for (int z = min_esdf[2]; z <= max_esdf[2]; z++) {
+      fillESDF([&](int x) { return md_.tmp_buffer2_[toAddress(x, y, z)]; },
+               [&](int x, double val) {
+                 md_.distance_buffer_neg_[toAddress(x, y, z)] = mp_.resolution_ * std::sqrt(val);
+               },
+               min_esdf[0], max_esdf[0], 0);
+    }
+  }
+
+  /* ========== combine pos and neg DT ========== */
+  for (int x = min_esdf(0); x <= max_esdf(0); ++x)
+    for (int y = min_esdf(1); y <= max_esdf(1); ++y)
+      for (int z = min_esdf(2); z <= max_esdf(2); ++z) {
+
+        int idx = toAddress(x, y, z);
+        md_.distance_buffer_all_[idx] = md_.distance_buffer_[idx];
+
+        if (md_.distance_buffer_neg_[idx] > 0.0)
+          md_.distance_buffer_all_[idx] += (-md_.distance_buffer_neg_[idx] + mp_.resolution_);
+      }
+}
+
+void GridMap::localMaupdateESDFCb(const ros::TimerEvent& /*event*/) {
+  if (!md_.esdf_need_update_) return;
+
+  /* esdf */
+  ros::Time t1, t2;
+  t1 = ros::Time::now();
+
+  updateESDF3d();
+
+  t2 = ros::Time::now();
+
+  md_.esdf_time_ += (t2 - t1).toSec();
+  md_.max_esdf_time_ = max(md_.max_esdf_time_, (t2 - t1).toSec());
+
+
+  md_.esdf_need_update_ = false;
+}
+
+void GridMap::publishESDF() {
+  double dist;
+  pcl::PointCloud<pcl::PointXYZI> cloud;
+  pcl::PointXYZI pt;
+
+  const double min_dist = 0.0;
+  const double max_dist = 3.0;
+
+  Eigen::Vector3i min_cut = md_.local_bound_min_ -
+      Eigen::Vector3i(mp_.local_map_margin_, mp_.local_map_margin_, mp_.local_map_margin_);
+  Eigen::Vector3i max_cut = md_.local_bound_max_ +
+      Eigen::Vector3i(mp_.local_map_margin_, mp_.local_map_margin_, mp_.local_map_margin_);
+  boundIndex(min_cut);
+  boundIndex(max_cut);
+
+  for (int x = min_cut(0); x <= max_cut(0); ++x)
+    for (int y = min_cut(1); y <= max_cut(1); ++y) {
+
+      Eigen::Vector3d pos;
+      indexToPos(Eigen::Vector3i(x, y, 1), pos);
+      pos(2) = mp_.esdf_slice_height_;
+
+      dist = getDistance(pos);
+      dist = min(dist, max_dist);
+      dist = max(dist, min_dist);
+
+      pt.x = pos(0);
+      pt.y = pos(1);
+      pt.z = -0.2;
+      pt.intensity = (dist - min_dist) / (max_dist - min_dist);
+      cloud.push_back(pt);
+    }
+
+  cloud.width = cloud.points.size();
+  cloud.height = 1;
+  cloud.is_dense = true;
+  cloud.header.frame_id = mp_.frame_id_;
+  sensor_msgs::PointCloud2 cloud_msg;
+  pcl::toROSMsg(cloud, cloud_msg);
+
+  esdf_pub_.publish(cloud_msg);
+
+  // ROS_INFO("pub esdf");
+}
 // GridMap

@@ -36,7 +36,6 @@ namespace air_pilot
   }
 
 
-
   bool PlannerManager::OptimizeOnce(Eigen::Vector3d start_pt, Eigen::Vector3d start_vel,
                                         Eigen::Vector3d start_acc, Eigen::Vector3d local_target_pt,
                                         Eigen::Vector3d local_target_vel, bool flag_polyInit, bool flag_randomPolyTraj)

@@ -10,6 +10,8 @@ A lite-version motion planning project for multicopter.
 
 ## perception
 删除不必要的函数和判断
+增加统计的参数
+
 ## planning
 删掉gradient decent optimizer.cpp
 修改fsm中的初始轨迹生成

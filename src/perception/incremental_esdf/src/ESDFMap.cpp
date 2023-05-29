@@ -1,6 +1,4 @@
-//
-// Created by tommy on 12/17/18.
-//
+
 
 #include "ESDFMap.h"
 #include <math.h>

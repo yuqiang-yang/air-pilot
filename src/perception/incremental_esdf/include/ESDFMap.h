@@ -1,6 +1,3 @@
-//
-// Created by tommy on 12/17/18.
-//
 
 #ifndef ESDF_MAP_H
 #define ESDF_MAP_H

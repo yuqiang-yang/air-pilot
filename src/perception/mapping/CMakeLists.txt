@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(plan_env)
+project(mapping)
 
 set(CMAKE_BUILD_TYPE "Release")
 ADD_COMPILE_OPTIONS(-std=c++11 )
@@ -23,7 +23,7 @@ find_package(PCL 1.7 REQUIRED)
 
 catkin_package(
  INCLUDE_DIRS include
- LIBRARIES plan_env
+ LIBRARIES mapping
  CATKIN_DEPENDS roscpp std_msgs
 #  DEPENDS system_lib
 )
@@ -39,11 +39,11 @@ include_directories(
 
 link_directories(${PCL_LIBRARY_DIRS})
 
-add_library( plan_env 
+add_library( mapping 
     src/GridMap.cpp 
     src/RayCaster.cpp
     )
-target_link_libraries( plan_env
+target_link_libraries( mapping
     ${catkin_LIBRARIES} 
     ${PCL_LIBRARIES}
     )  

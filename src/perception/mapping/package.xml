@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>plan_env</name>
+  <name>mapping</name>
   <version>0.0.0</version>
-  <description>The plan_env package</description>
+  <description>The mapping package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

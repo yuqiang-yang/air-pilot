@@ -14,7 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   quadrotor_msgs
-  plan_env
+  mapping
   path_searching
   bspline_opt
   traj_utils
@@ -40,7 +40,7 @@ generate_messages(
 catkin_package(
  INCLUDE_DIRS include
  LIBRARIES air_pilot
- CATKIN_DEPENDS plan_env path_searching bspline_opt traj_utils message_runtime
+ CATKIN_DEPENDS mapping path_searching bspline_opt traj_utils message_runtime
 #  DEPENDS system_lib
 )
 

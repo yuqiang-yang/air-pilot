@@ -1,6 +1,3 @@
-//
-// Created by tommy on 4/25/19.
-//
 
 #ifndef ESDF_TOOLS_INCLUDE_PARAMETERS_H_
 #define ESDF_TOOLS_INCLUDE_PARAMETERS_H_
